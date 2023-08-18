@@ -1,7 +1,9 @@
 #ifndef _UTILS_H
 #define _UTILS_H
 
-GLenum glCheckError_(const char *file, int line)
+#include <cstdio>
+
+static GLenum glCheckError_(const char *file, int line)
 {
     GLenum errorCode;
     while ((errorCode = glGetError()) != GL_NO_ERROR)
