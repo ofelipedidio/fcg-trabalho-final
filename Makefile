@@ -1,41 +1,36 @@
-PROJECT  := fcp_game
-
 # Compiler and Linker
 CXX      := g++
-CXXFLAGS := -Wall -Iinclude
+CXXFLAGS := -Wall -Wno-unused-function -g -I ./include/ -o ./bin/fcg_game 
 LDFLAGS  := 
 LDLIBS   := 
-
-# Directories
-SRCDIR   := src
-OBJDIR   := obj
-BINDIR   := bin
 
 # Files and Objects
 SOURCES  := $(wildcard $(SRCDIR)/*.cpp)
 OBJECTS  := $(SOURCES:$(SRCDIR)/%.cpp=$(OBJDIR)/%.o)
-TARGET   := $(BINDIR)/$(PROJECT)
 
+all: make_directories run
 
-all: directories $(TARGET)
-
-$(TARGET): $(OBJECTS)
+bin/fcg_game: $(OBJECTS)
 	$(CXX) $(LDFLAGS) $^ -o $@ $(LDLIBS)
 
-$(OBJDIR)/%.o: $(SRCDIR)/%.cpp
-	$(CXX) $(CXXFLAGS) -c $< -o $@
+obj/%.o: src/%.cpp
+	$(CXX) $(CXXFLAGS) -c %< -o $@
 
-directories: $(OBJDIR) $(BINDIR)
+make_directories:
+	mkdir -p obj
+	mkdir -p src 
 
-$(OBJDIR):
-	mkdir -p $(OBJDIR)
+./bin/fcg_game: src/main.cpp src/glad.c include/utils.h
+	mkdir -p bin/Linux
+	g++ -std=c++11 $(CXXFLAGS) src/glad.c src/main.cpp ./lib-linux/libglfw3.a -lrt -lm -ldl -lX11 -lpthread -lXrandr -lXinerama -lXxf86vm -lXcursor
 
-$(BINDIR):
-	mkdir -p $(BINDIR)
-
+.PHONY: clean run
 clean:
-	rm -f $(OBJDIR)/*.o
-	rm -f $(TARGET)
+	rm -f bin/Linux/main
 
-.PHONY: all clean
+run: ./bin/Linux/main
+	cd bin/Linux && ./main
+
+$(info $$SOURCES is [${SOURCES}])
+$(info $$OBJECTS is [${OBJECTS}])
 
