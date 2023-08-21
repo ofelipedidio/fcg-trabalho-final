@@ -21,12 +21,12 @@
 #include <sstream>
 
 // Headers das bibliotecas OpenGL
-#include <glad/glad.h>   // Criação de contexto OpenGL 3.3
-#include <GLFW/glfw3.h>  // Criação de janelas do sistema operacional
+#include "glad/glad.h"   // Criação de contexto OpenGL 3.3
+#include "GLFW/glfw3.h"  // Criação de janelas do sistema operacional
 
-#include <glm/mat4x4.hpp>
-#include <glm/vec4.hpp>
-#include <glm/gtc/type_ptr.hpp>
+#include "glm/mat4x4.hpp"
+#include "glm/vec4.hpp"
+#include "glm/gtc/type_ptr.hpp"
 
 #include "utils.h"
 #include "matrices.h"
@@ -64,6 +64,7 @@ namespace Particle {
         public:
             ParticleEmitter(int maxParticleCount);
             void emit(ParticleProprieties proprieties);
+            void emitIn(ParticleProprieties proprieties, float timeToEmit);
             void onUpdate(float dt);
             void onRender(Renderer &renderer);
     };

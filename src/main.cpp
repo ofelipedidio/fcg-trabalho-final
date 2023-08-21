@@ -31,13 +31,13 @@
 #include <vector>
 
 // Headers das bibliotecas OpenGL
-#include <glad/glad.h>   // Criação de contexto OpenGL 3.3
-#include <GLFW/glfw3.h>  // Criação de janelas do sistema operacional
+#include "glad/glad.h"   // Criação de contexto OpenGL 3.3
+#include "GLFW/glfw3.h"  // Criação de janelas do sistema operacional
 
 // Headers da biblioteca GLM: criação de matrizes e vetores.
-#include <glm/mat4x4.hpp>
-#include <glm/vec4.hpp>
-#include <glm/gtc/type_ptr.hpp>
+#include "glm/mat4x4.hpp"
+#include "glm/vec4.hpp"
+#include "glm/gtc/type_ptr.hpp"
 
 // Headers locais, definidos na pasta "include/"
 #include "renderer.h"
@@ -205,7 +205,7 @@ typedef struct ParticleS {
     float life, maxlife;
 } ParticleS;
 
-std::vector<ParticleS> particles(100000);
+std::vector<ParticleS> particles(1000000);
 int particleIndex = 0;
 
 void emit(ParticleS particle) {
@@ -229,6 +229,7 @@ void emit(ParticleS particle) {
 }
 
 #include "particle.h"
+Particle::ParticleEmitter emitter(10000);
 
 int main() {
     GLFWwindow *window = setup();
@@ -255,109 +256,11 @@ int main() {
     glFrontFace(GL_CCW);
 
     float previousTime = glfwGetTime();
-
-    ParticleS particle;
-    particle.x = 0;
-    particle.y = 0;
-    particle.z = 0;
-    particle.xs = 0;
-    particle.ys = 0;
-    particle.zs = 0;
-    particle.xa = 0;
-    particle.ya = -0.005f;
-    particle.za = 0;
-    particle.beginSize = 1.0f;
-    particle.endSize = 0.0f;
-    particle.life = 10.0f;
-
     Random::Init();
-
-    // Emit particles once
-    /*
-    for (int i = 0; i < 20; i++) {
-        particle.x += 1.0f * ((2.0f*Random::Float())-1.0f);
-        particle.y += 1.0f * ((2.0f*Random::Float())-1.0f);
-        particle.z += 1.0f * ((2.0f*Random::Float())-1.0f);
-        particle.xs += 0.01f * ((2.0f*Random::Float())-1.0f);
-        particle.ys += 0.01f * ((2.0f*Random::Float())-1.0f);
-        particle.zs += 0.01f* ((2.0f*Random::Float())-1.0f);
-        particle.life = 100.0f * Random::Float();
-        particle.beginSize = 1.0f;
-        particle.endSize = 0.0f;
-        emit(particle);
-    }
-    */
 
 #define PI 3.14159265359
 #define SIDES 20.0
 #define VSIDES 10.0
-
-    {
-        float speed = 1.0f;
-        float r = speed;
-        for (float i = 0.0f; i < 2.0f*PI; i += (2.0f*PI)/SIDES) {
-            for (float j = -PI / 2.0f; j < PI * 2.0f ; j += PI / VSIDES) {
-                float y = r*sin(i);
-                float z = r*cos(i)*cos(j);
-                float x = r*cos(i)*sin(j);
-
-                particle.x = 0;
-                particle.y = 0;
-                particle.z = 0;
-                particle.xs = x;
-                particle.ys = y;
-                particle.zs = z;
-
-                particle.xa = -x * 0.01;
-                particle.ya = -y * 0.01;
-                particle.za = -z * 0.01;
-
-                particle.ys += 1.0f;
-                particle.ya -= 1.0f;
-
-                emit(particle);
-            }
-        }
-    }
-
-    Particle::ParticleEmitter emitter(10000);
-
-    Particle::ParticleProprieties particleProprieties;
-
-    particleProprieties.x = 0;
-    particleProprieties.y = 0;
-    particleProprieties.z = 0;
-
-    particleProprieties.xs = 1.0;
-    particleProprieties.ys = 0;
-    particleProprieties.zs = 0;
-
-    particleProprieties.xa = 0;
-    particleProprieties.ya = 0;
-    particleProprieties.za = 0;
-
-    particleProprieties.rotationX = 0;
-    particleProprieties.rotationY = 0;
-    particleProprieties.rotationZ = 0;
-
-    particleProprieties.rotationSpeedX = 10.0f;
-    particleProprieties.rotationSpeedY = 10.0f;
-    particleProprieties.rotationSpeedZ = 1.0f;
-
-    particleProprieties.size = 1.0f;
-    particleProprieties.sizeChange = -1.0f;
-
-    particleProprieties.duration = 100.0f;
-
-    RenderObject ro((void*)g_VirtualScene["cube_faces"].first_index, g_VirtualScene["cube_faces"].num_indices,  g_VirtualScene["cube_faces"].rendering_mode);
-
-    particleProprieties.object = ro;
-
-    for (int i = 0; i < 1000; i++) {
-        emitter.emit(particleProprieties);
-    }
-
-    Renderer renderer(g_GpuProgramID);
 
     float aaa;
     int spawnCount = 0;
@@ -372,6 +275,7 @@ int main() {
 
 #define EMIT_INTERVAL 0.05f
 
+        /*
         while (aaa >= EMIT_INTERVAL && spawnCount < 20) {
             spawnCount++;
             aaa -= EMIT_INTERVAL;
@@ -404,7 +308,8 @@ int main() {
                 }
             }
         }
-        
+        */
+
         // Clear screen
         glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -414,6 +319,9 @@ int main() {
 
         // Usar objeto (cubo)
         glBindVertexArray(vertex_array_object_id);
+
+        // Criar um Renderer
+        Renderer renderer(g_GpuProgramID);
 
         glm::mat4 view;
         {
@@ -451,11 +359,7 @@ int main() {
 
         emitter.onUpdate(dt);
         emitter.onRender(renderer);
-
-        // Cube
-        {
-        }
-
+        
         // Overlay text
         {
             glm::mat4 model = Matrix_Identity();
@@ -917,6 +821,82 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
         g_UsePerspectiveProjection = false;
     } else if (key == GLFW_KEY_H && action == GLFW_PRESS) {
         g_ShowInfoText = !g_ShowInfoText;
+    } else if (key == GLFW_KEY_F && action == GLFW_PRESS) {
+        Particle::ParticleProprieties particle;
+
+        // Configurar o particleProprieties
+        particle.x = 0;
+        particle.y = 0;
+        particle.z = 0;
+        particle.xs = 0;
+        particle.ys = 0;
+        particle.zs = 0;
+        particle.xa = 0;
+        particle.ya = 0;
+        particle.za = 0;
+        particle.rotationX = 0;
+        particle.rotationY = 0;
+        particle.rotationZ = 0;
+        particle.rotationSpeedX = 0;
+        particle.rotationSpeedY = 0;
+        particle.rotationSpeedZ = 0;
+        particle.size = 1.0f;
+        particle.sizeChange = -1.0f;
+        particle.duration = 8.0f;
+
+        // Carregar o objeto da particula (nesse caso o cubo)
+        RenderObject ro((void*)g_VirtualScene["cube_faces"].first_index, g_VirtualScene["cube_faces"].num_indices,  g_VirtualScene["cube_faces"].rendering_mode);
+        particle.object = ro;
+
+        {
+            float speed = 1.0f;
+            float r = speed;
+            for (float i = 0.0f; i < 2.0f*PI; i += (2.0f*PI)/SIDES) {
+                for (float j = -PI / 2.0f; j < PI * 2.0f ; j += PI / VSIDES) {
+                    float y = r*sin(i);
+                    float z = r*cos(i)*cos(j);
+                    float x = r*cos(i)*sin(j);
+
+                    particle.x = 0;
+                    particle.y = 30.0f;
+                    particle.z = 0;
+                    particle.xs = x;
+                    particle.ys = y;
+                    particle.zs = z;
+
+                    particle.xa = -x * 0.05;
+                    particle.ya = -y * 0.05;
+                    particle.za = -z * 0.05;
+
+                    particle.ys += 1.0f;
+                    particle.ya -= 1.0f;
+
+                    particle.xs *= 20;
+                    particle.ys *= 20;
+                    particle.zs *= 20;
+                    particle.xa *= 20;
+                    particle.ya *= 20;
+                    particle.za *= 20;
+
+                    particle.xs += (Random::Float() * 2.0f - 1.0f) * 0.02;
+                    particle.ys += (Random::Float() * 2.0f - 1.0f) * 0.02;
+                    particle.zs += (Random::Float() * 2.0f - 1.0f) * 0.02;
+
+                    particle.rotationSpeedX += (Random::Float() * 2.0f - 1.0f) * 0.2;
+                    particle.rotationSpeedY += (Random::Float() * 2.0f - 1.0f) * 0.2;
+                    particle.rotationSpeedZ += (Random::Float() * 2.0f - 1.0f) * 0.2;
+
+                    particle.duration = 6.0f + 0.5f * (Random::Float() * 2.0f - 1.0f);
+
+                    for (int k = 0; k < 20; k++) {
+                        particle.size = (20.0-k)/20.0f;
+                        particle.sizeChange = -particle.size;
+                        emitter.emitIn(particle, k/20.0f);
+                    }
+                }
+            }
+        }
+
     }
 }
 

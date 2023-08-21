@@ -6,9 +6,9 @@
 #include <cstdio>
 #include <cstdlib>
 
-#include <glm/mat4x4.hpp>
-#include <glm/vec4.hpp>
-#include <glm/gtc/matrix_transform.hpp>
+#include "glm/mat4x4.hpp"
+#include "glm/vec4.hpp"
+#include "glm/gtc/matrix_transform.hpp"
 
 glm::mat4 Matrix(
     float m00, float m01, float m02, float m03, // LINHA 1

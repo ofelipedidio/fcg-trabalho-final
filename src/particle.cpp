@@ -20,6 +20,17 @@ namespace Particle {
         }
     }
 
+    void ParticleEmitter::emitIn(ParticleProprieties proprieties, float timeToEmit) {
+        Particle &particle = this->particles[particleEnd];
+        particle.props = proprieties;
+        particle.life = 1.0f + timeToEmit;
+
+        particleEnd = (particleEnd + 1) % this->particles.size();
+        if (particleEnd == particleStart) {
+            particleStart = (particleStart + 1) % this->particles.size();
+        }
+    }
+
 #define dbg(x) (#x " = ") << x << " | "
 
     void ParticleEmitter::onUpdate(float dt) {
@@ -27,6 +38,17 @@ namespace Particle {
             Particle &particle = this->particles[i];
 
             float timeDelta = dt / particle.props.duration;
+            if (particle.life > 1.0f) {
+                particle.life -= dt;
+
+                if (particle.life >= 1.0f) {
+                    continue;
+                } else {
+                    timeDelta = (1.0f-particle.life) / particle.props.duration;
+                    particle.life = 1.0f;
+                }
+            }
+
             particle.life -= timeDelta;
 
             if (particle.life <= 0.0f) {
@@ -56,6 +78,10 @@ namespace Particle {
         for (unsigned long int i = this->particleStart; i != this->particleEnd; i = (i+1) % this->particles.size()) {
             Particle &particle = this->particles[i];
 
+            if (particle.life > 1.0f) {
+                continue;
+            }
+
             // Create tranformation matrix
             auto model = Matrix_Identity();
             auto translate = Matrix_Translate(particle.props.x, particle.props.y, particle.props.z);
@@ -64,12 +90,12 @@ namespace Particle {
             auto ry = Matrix_Rotate_Y(particle.props.rotationY);
             auto rz = Matrix_Rotate_Z(particle.props.rotationZ);
             auto scale = Matrix_Scale(particle.props.size, particle.props.size, particle.props.size);
-            // model *= translate;
+            model *= translate;
             model *= rx;
             model *= ry;
             model *= rz;
+            model *= scale;
             // model *= rotate;
-            // model *= scale;
 
             // Send transformation matrix to the GPU
             glUniformMatrix4fv(renderer.model, 1, GL_FALSE, glm::value_ptr(model));
