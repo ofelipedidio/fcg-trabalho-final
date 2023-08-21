@@ -28,6 +28,7 @@
 #include <limits>
 #include <fstream>
 #include <sstream>
+#include <vector>
 
 // Headers das bibliotecas OpenGL
 #include <glad/glad.h>   // Criação de contexto OpenGL 3.3
@@ -37,9 +38,9 @@
 #include <glm/mat4x4.hpp>
 #include <glm/vec4.hpp>
 #include <glm/gtc/type_ptr.hpp>
-#include <vector>
 
 // Headers locais, definidos na pasta "include/"
+#include "renderer.h"
 #include "utils.h"
 #include "matrices.h"
 
@@ -85,8 +86,7 @@ void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
 
 // Definimos uma estrutura que armazenará dados necessários para renderizar
 // cada objeto da cena virtual.
-struct SceneObject
-{
+struct SceneObject {
     const char*  name;
     void*        first_index;
     int          num_indices;
@@ -136,9 +136,6 @@ bool g_ShowInfoText = true;
 
 // Variáveis que definem um programa de GPU (shaders). Veja função LoadShadersFromFiles().
 GLuint g_GpuProgramID = 0;
-
-void PushMatrix(glm::mat4 M);
-void PopMatrix(glm::mat4& M);
 
 GLFWwindow* setup() {
     int success = glfwInit();
@@ -199,19 +196,19 @@ GLint view_uniform            ; // Variável da matriz "view" em shader_vertex.g
 GLint projection_uniform      ; // Variável da matriz "projection" em shader_vertex.glsl
 GLint render_as_black_uniform ; // Variável booleana em shader_vertex.glsl
 
-typedef struct Particle {
+typedef struct ParticleS {
     bool active = false;
     float x, y, z;
     float xs, ys, zs;
     float xa, ya, za;
     float beginSize, endSize;
     float life, maxlife;
-} Particle;
+} ParticleS;
 
-std::vector<Particle> particles(100000);
+std::vector<ParticleS> particles(100000);
 int particleIndex = 0;
 
-void emit(Particle particle) {
+void emit(ParticleS particle) {
     particles[particleIndex].x = particle.x;
     particles[particleIndex].y = particle.y;
     particles[particleIndex].z = particle.z;
@@ -228,8 +225,10 @@ void emit(Particle particle) {
     particles[particleIndex].active = true;
 
     particleIndex = (particleIndex+1) % particles.size();
-    std::cout << particleIndex << std::endl;
+    // std::cout << particleIndex << std::endl;
 }
+
+#include "particle.h"
 
 int main() {
     GLFWwindow *window = setup();
@@ -257,7 +256,7 @@ int main() {
 
     float previousTime = glfwGetTime();
 
-    Particle particle;
+    ParticleS particle;
     particle.x = 0;
     particle.y = 0;
     particle.z = 0;
@@ -321,6 +320,45 @@ int main() {
         }
     }
 
+    Particle::ParticleEmitter emitter(10000);
+
+    Particle::ParticleProprieties particleProprieties;
+
+    particleProprieties.x = 0;
+    particleProprieties.y = 0;
+    particleProprieties.z = 0;
+
+    particleProprieties.xs = 1.0;
+    particleProprieties.ys = 0;
+    particleProprieties.zs = 0;
+
+    particleProprieties.xa = 0;
+    particleProprieties.ya = 0;
+    particleProprieties.za = 0;
+
+    particleProprieties.rotationX = 0;
+    particleProprieties.rotationY = 0;
+    particleProprieties.rotationZ = 0;
+
+    particleProprieties.rotationSpeedX = 10.0f;
+    particleProprieties.rotationSpeedY = 10.0f;
+    particleProprieties.rotationSpeedZ = 1.0f;
+
+    particleProprieties.size = 1.0f;
+    particleProprieties.sizeChange = -1.0f;
+
+    particleProprieties.duration = 100.0f;
+
+    RenderObject ro((void*)g_VirtualScene["cube_faces"].first_index, g_VirtualScene["cube_faces"].num_indices,  g_VirtualScene["cube_faces"].rendering_mode);
+
+    particleProprieties.object = ro;
+
+    for (int i = 0; i < 1000; i++) {
+        emitter.emit(particleProprieties);
+    }
+
+    Renderer renderer(g_GpuProgramID);
+
     float aaa;
     int spawnCount = 0;
     while (!glfwWindowShouldClose(window))
@@ -366,25 +404,7 @@ int main() {
                 }
             }
         }
-
-        // Constantly emit particles
-        /*
-        while (aaa >= EMIT_INTERVAL) {
-            aaa -= EMIT_INTERVAL;
-            particle.x = ((2.0f*Random::Float())-1.0f);
-            particle.y = ((2.0f*Random::Float())-1.0f);
-            particle.z = ((2.0f*Random::Float())-1.0f);
-            particle.xs = 0.5f + (0.1f * ((2.0f*Random::Float())-1.0f));
-            particle.ys = 2.0f + (0.1f * ((2.0f*Random::Float())-1.0f));
-            particle.zs = 0.3f + (0.1f* ((2.0f*Random::Float())-1.0f));
-            particle.life = 100.0f * Random::Float();
-            particle.beginSize = 1.0f;
-            particle.endSize = 0.0f;
-            emit(particle);
-            std::cout << ((2.0f*Random::Float())-1.0f) << std::endl;
-        }
-        */
-
+        
         // Clear screen
         glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -428,6 +448,9 @@ int main() {
 
         onUpdate(dt);
         onRender();
+
+        emitter.onUpdate(dt);
+        emitter.onRender(renderer);
 
         // Cube
         {
@@ -492,7 +515,7 @@ void onRender() {
         auto scale = Matrix_Scale(s, s, s);
         model *= translate;
         model *= scale;
-        // Transform object
+        // Send transform matrix to GPU
         glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
         // Draw object
         glUniform1i(render_as_black_uniform, false);
@@ -502,6 +525,7 @@ void onRender() {
                 GL_UNSIGNED_INT,
                 (void*)g_VirtualScene["cube_faces"].first_index
                 );
+
     }
 }
 

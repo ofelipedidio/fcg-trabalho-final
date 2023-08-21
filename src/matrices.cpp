@@ -1,12 +1,4 @@
-#ifndef _MATRICES_H
-#define _MATRICES_H
-
-#include <cstdio>
-#include <cstdlib>
-
-#include <glm/mat4x4.hpp>
-#include <glm/vec4.hpp>
-#include <glm/gtc/matrix_transform.hpp>
+#include "matrices.h"
 
 // Esta função Matrix() auxilia na criação de matrizes usando a biblioteca GLM.
 // Note que em OpenGL (e GLM) as matrizes são definidas como "column-major",
@@ -154,6 +146,27 @@ float norm(glm::vec4 v)
     float vz = v.z;
 
     return sqrt( vx*vx + vy*vy + vz*vz );
+}
+
+// Matriz R de "rotação de um ponto" em relação à origem do sistema de
+// coordenadas e em torno do eixo definido pelo vetor 'axis'. Esta matriz pode
+// ser definida pela fórmula de Rodrigues. Lembre-se que o vetor que define o
+// eixo de rotação deve ser normalizado!
+glm::mat4 Matrix_Rotate_XYZ(float xAngle, float yAngle, float zAngle) {
+    
+    float cx = cos(xAngle);
+    float sx = sin(xAngle);
+    float cy = cos(yAngle);
+    float sy = sin(yAngle);
+    float cz = cos(zAngle);
+    float sz = sin(zAngle);
+
+    return Matrix(
+            cy*cz           , -sz*cy          , -sy   , 0.0f,
+            sz*cx - sx*sy*cz, cx*cz + sx*sy*sz, -sx*cy, 0.0f,
+            sx*sz + sy*cx*cz, sx*cz - sy*sz*cx, cx*cy , 0.0f,
+            0.0f            , 0.0f            , 0.0f  , 1.0f
+    );
 }
 
 // Matriz R de "rotação de um ponto" em relação à origem do sistema de
@@ -363,7 +376,3 @@ void PrintMatrixVectorProductDivW(glm::mat4 M, glm::vec4 v)
     printf("[ %+0.2f  %+0.2f  %+0.2f  %+0.2f ][ %+0.2f ]   [ %+0.2f ]            [ %+0.2f ]\n", M[0][2], M[1][2], M[2][2], M[3][2], v[2], r[2], r[2]/w);
     printf("[ %+0.2f  %+0.2f  %+0.2f  %+0.2f ][ %+0.2f ]   [ %+0.2f ]            [ %+0.2f ]\n", M[0][3], M[1][3], M[2][3], M[3][3], v[3], r[3], r[3]/w);
 }
-
-
-#endif // _MATRICES_H
-// vim: set spell spelllang=pt_br :
