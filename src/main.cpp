@@ -20,7 +20,9 @@
 #include <cstdlib>
 
 // Headers abaixo são específicos de C++
+#include <iostream>
 #include <map>
+#include <ostream>
 #include <stack>
 #include <string>
 #include <limits>
@@ -35,6 +37,7 @@
 #include <glm/mat4x4.hpp>
 #include <glm/vec4.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <vector>
 
 // Headers locais, definidos na pasta "include/"
 #include "utils.h"
@@ -113,7 +116,7 @@ float g_AngleZ = 0.0f;
 // renderização.
 float g_CameraTheta = 0.0f; // Ângulo no plano ZX em relação ao eixo Z
 float g_CameraPhi = 0.0f;   // Ângulo em relação ao eixo Y
-float g_CameraDistance = 3.5f; // Distância da câmera para a origem
+float g_CameraDistance = 50.0f; // Distância da câmera para a origem
 
 // Variáveis que controlam rotação do antebraço
 float g_ForearmAngleZ = 0.0f;
@@ -186,8 +189,62 @@ void displaySystemInfo() {
     printf("GPU: %s, %s, OpenGL %s, GLSL %s\n", vendor, renderer, glversion, glslversion);
 }
 
-int main()
-{
+void onUpdate(float dt);
+void onRender();
+
+GLint model_uniform           ; // Variável da matriz "model"
+GLint view_uniform            ; // Variável da matriz "view" em shader_vertex.glsl
+GLint projection_uniform      ; // Variável da matriz "projection" em shader_vertex.glsl
+GLint render_as_black_uniform ; // Variável booleana em shader_vertex.glsl
+
+typedef struct Particle {
+    bool active = false;
+    float x, y, z;
+    float xs, ys, zs;
+    float xa, ya, za;
+    float beginSize, endSize;
+    float life, maxlife;
+} Particle;
+
+std::vector<Particle> particles(1000);
+int particleIndex = 999;
+
+void emit(Particle particle) {
+    particles[particleIndex].x = particle.x;
+    particles[particleIndex].y = particle.y;
+    particles[particleIndex].z = particle.z;
+    particles[particleIndex].xs = particle.xs;
+    particles[particleIndex].ys = particle.ys;
+    particles[particleIndex].zs = particle.zs;
+    particles[particleIndex].xa = particle.xa;
+    particles[particleIndex].ya = particle.ya;
+    particles[particleIndex].za = particle.za;
+    particles[particleIndex].beginSize = particle.beginSize;
+    particles[particleIndex].endSize = particle.endSize;
+    particles[particleIndex].life = particle.life;
+    particles[particleIndex].maxlife = particle.life;
+    particles[particleIndex].active = true;
+
+    particleIndex = (particleIndex-1) % particles.size();
+}
+
+#include <random>
+
+namespace Random {
+    std::mt19937 s_RandomEngine;
+    std::uniform_real_distribution<float> s_Distribution;
+
+    void Init() {
+        s_RandomEngine.seed(std::random_device()());
+        s_Distribution = std::uniform_real_distribution<float>(0.0f, 1.0f);
+    }
+
+    float Float() {
+        return (float)s_Distribution(s_RandomEngine);
+    }
+}
+
+int main() {
     GLFWwindow *window = setup();
 
     displaySystemInfo();
@@ -198,10 +255,10 @@ int main()
 
     TextRendering_Init();
 
-    GLint model_uniform           = glGetUniformLocation(g_GpuProgramID, "model"); // Variável da matriz "model"
-    GLint view_uniform            = glGetUniformLocation(g_GpuProgramID, "view"); // Variável da matriz "view" em shader_vertex.glsl
-    GLint projection_uniform      = glGetUniformLocation(g_GpuProgramID, "projection"); // Variável da matriz "projection" em shader_vertex.glsl
-    GLint render_as_black_uniform = glGetUniformLocation(g_GpuProgramID, "render_as_black"); // Variável booleana em shader_vertex.glsl
+    model_uniform           = glGetUniformLocation(g_GpuProgramID, "model"); // Variável da matriz "model"
+    view_uniform            = glGetUniformLocation(g_GpuProgramID, "view"); // Variável da matriz "view" em shader_vertex.glsl
+    projection_uniform      = glGetUniformLocation(g_GpuProgramID, "projection"); // Variável da matriz "projection" em shader_vertex.glsl
+    render_as_black_uniform = glGetUniformLocation(g_GpuProgramID, "render_as_black"); // Variável booleana em shader_vertex.glsl
 
     // Habilitamos o Z-buffer. Veja slides 104-116 do documento Aula_09_Projecoes.pdf.
     glEnable(GL_DEPTH_TEST);
@@ -211,8 +268,101 @@ int main()
     glCullFace(GL_BACK);
     glFrontFace(GL_CCW);
 
+    float previousTime = glfwGetTime();
+
+    Particle particle;
+    particle.x = 0;
+    particle.y = 0;
+    particle.z = 0;
+    particle.xs = 0;
+    particle.ys = 0;
+    particle.zs = 0;
+    particle.xa = 0;
+    particle.ya = -0.005f;
+    particle.za = 0;
+    particle.beginSize = 1.0f;
+    particle.endSize = 0.0f;
+    particle.life = 10.0f;
+
+    Random::Init();
+
+    // Emit particles once
+    /*
+    for (int i = 0; i < 20; i++) {
+        particle.x += 1.0f * ((2.0f*Random::Float())-1.0f);
+        particle.y += 1.0f * ((2.0f*Random::Float())-1.0f);
+        particle.z += 1.0f * ((2.0f*Random::Float())-1.0f);
+        particle.xs += 0.01f * ((2.0f*Random::Float())-1.0f);
+        particle.ys += 0.01f * ((2.0f*Random::Float())-1.0f);
+        particle.zs += 0.01f* ((2.0f*Random::Float())-1.0f);
+        particle.life = 100.0f * Random::Float();
+        particle.beginSize = 1.0f;
+        particle.endSize = 0.0f;
+        emit(particle);
+    }
+    */
+
+#define PI 3.14159265359
+#define SIDES 20.0
+#define VSIDES 10.0
+
+    {
+        float speed = 0.1f;
+        float r = speed;
+        for (float i = 0.0f; i < 2.0f*PI; i += (2.0f*PI)/SIDES) {
+            for (float j = -PI / 2.0f; j < PI * 2.0f ; j += PI / VSIDES) {
+                float y = r*sin(i);
+                float z = r*cos(i)*cos(j);
+                float x = r*cos(i)*sin(j);
+
+                particle.x = 0;
+                particle.y = 0;
+                particle.z = 0;
+                particle.xs = x;
+                particle.ys = y;
+                particle.zs = z;
+
+                particle.xa = -x * 0.001;
+                particle.ya = -y * 0.001;
+                particle.za = -z * 0.001;
+
+                particle.ys += 0.1f;
+                particle.ya -= 0.001f;
+
+                emit(particle);
+            }
+        }
+    }
+
+    float aaa;
     while (!glfwWindowShouldClose(window))
     {
+
+        double currentTime = glfwGetTime();
+        float dt = currentTime - previousTime;
+        previousTime = currentTime;
+
+        aaa += dt;
+
+#define EMIT_INTERVAL 0.01f
+        // Constantly emit particles
+        /*
+        while (aaa >= EMIT_INTERVAL) {
+            aaa -= EMIT_INTERVAL;
+            particle.x = ((2.0f*Random::Float())-1.0f);
+            particle.y = ((2.0f*Random::Float())-1.0f);
+            particle.z = ((2.0f*Random::Float())-1.0f);
+            particle.xs = 0.5f + (0.1f * ((2.0f*Random::Float())-1.0f));
+            particle.ys = 2.0f + (0.1f * ((2.0f*Random::Float())-1.0f));
+            particle.zs = 0.3f + (0.1f* ((2.0f*Random::Float())-1.0f));
+            particle.life = 100.0f * Random::Float();
+            particle.beginSize = 1.0f;
+            particle.endSize = 0.0f;
+            emit(particle);
+            std::cout << ((2.0f*Random::Float())-1.0f) << std::endl;
+        }
+        */
+
         // Clear screen
         glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -239,7 +389,7 @@ int main()
         glm::mat4 projection;
         {
             float nearplane = -0.1f;
-            float farplane  = -10.0f;
+            float farplane  = -10000.0f;
             if (g_UsePerspectiveProjection) {
                 float field_of_view = 3.141592 / 3.0f;
                 projection = Matrix_Perspective(field_of_view, g_ScreenRatio, nearplane, farplane);
@@ -254,12 +404,11 @@ int main()
             glUniformMatrix4fv(projection_uniform , 1 , GL_FALSE , glm::value_ptr(projection));
         }
 
+        onUpdate(dt);
+        onRender();
 
         // Cube
         {
-            glm::mat4 model = Matrix_Identity();
-            glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
-            DrawCube(render_as_black_uniform);
         }
 
         // Overlay text
@@ -288,9 +437,46 @@ int main()
     return 0;
 }
 
+void onUpdate(float dt) {
+    for (unsigned long int i = 0; i < particles.size(); i++) {
+        if (!particles[i].active) {
+            continue;
+        }
+        particles[i].life -= dt;
+        if (particles[i].life < 0.0f) {
+            particles[i].active = false;
+            continue;
+        }
+
+        particles[i].xs += particles[i].xa;
+        particles[i].ys += particles[i].ya;
+        particles[i].zs += particles[i].za;
+        particles[i].x += particles[i].xs;
+        particles[i].y += particles[i].ys;
+        particles[i].z += particles[i].zs;
+
+    }
+}
+
+void onRender() {
+    for (unsigned long int i = 0; i < particles.size(); i++) {
+        if (!particles[i].active) {
+            continue;
+        }
+        float l = 1.0f - (particles[i].life / particles[i].maxlife);
+        float s = ((1.0f-l) * particles[i].beginSize) + (l* particles[i].endSize);
+        glm::mat4 model = Matrix_Identity();
+        auto translate = Matrix_Translate(particles[i].x, particles[i].y, particles[i].z);
+        auto scale = Matrix_Scale(s, s, s);
+        model *= translate;
+        model *= scale;
+        glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
+        DrawCube(render_as_black_uniform);
+    }
+}
+
 void DrawCube(GLint render_as_black_uniform) {
     glUniform1i(render_as_black_uniform, false);
-
     // Cube
     {
         glDrawElements(
@@ -300,7 +486,7 @@ void DrawCube(GLint render_as_black_uniform) {
                 (void*)g_VirtualScene["cube_faces"].first_index
                 );
     }
-
+    return;
     // Axes
     {
         glLineWidth(4.0f);
@@ -311,7 +497,6 @@ void DrawCube(GLint render_as_black_uniform) {
                 (void*)g_VirtualScene["axes"].first_index
                 );
     }
-
     // Edges
     {
         glUniform1i(render_as_black_uniform, true);
@@ -349,29 +534,19 @@ GLuint BuildTriangles() {
         0.0f,  0.0f,  0.0f, 1.0f, // posição do vértice 12
         0.0f,  0.0f,  1.0f, 1.0f, // posição do vértice 13
     };
-
     GLuint VBO_model_coefficients_id;
     glGenBuffers(1, &VBO_model_coefficients_id);
-
     GLuint vertex_array_object_id;
     glGenVertexArrays(1, &vertex_array_object_id);
-
     glBindVertexArray(vertex_array_object_id);
-
     glBindBuffer(GL_ARRAY_BUFFER, VBO_model_coefficients_id);
-
     glBufferData(GL_ARRAY_BUFFER, sizeof(model_coefficients), NULL, GL_STATIC_DRAW);
-
     glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(model_coefficients), model_coefficients);
-
     GLuint location = 0; // "(location = 0)" em "shader_vertex.glsl"
     GLint  number_of_dimensions = 4; // vec4 em "shader_vertex.glsl"
     glVertexAttribPointer(location, number_of_dimensions, GL_FLOAT, GL_FALSE, 0, 0);
-
     glEnableVertexAttribArray(location);
-
     glBindBuffer(GL_ARRAY_BUFFER, 0);
-
     GLfloat color_coefficients[] = {
         // Cores dos vértices do cubo
         //  R     G     B     A
@@ -403,7 +578,6 @@ GLuint BuildTriangles() {
     glVertexAttribPointer(location, number_of_dimensions, GL_FLOAT, GL_FALSE, 0, 0);
     glEnableVertexAttribArray(location);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
-
     GLuint indices[] = {
         // Definimos os índices dos vértices que definem as FACES de um cubo
         // através de 12 triângulos que serão desenhados com o modo de renderização
@@ -441,24 +615,19 @@ GLuint BuildTriangles() {
         10, 11, // linha 2
         12, 13  // linha 3
     };
-
     SceneObject cube_faces;
     cube_faces.name           = "Cubo (faces coloridas)";
     cube_faces.first_index    = (void*)0; // Primeiro índice está em indices[0]
     cube_faces.num_indices    = 36;       // Último índice está em indices[35]; total de 36 índices.
     cube_faces.rendering_mode = GL_TRIANGLES; // Índices correspondem ao tipo de rasterização GL_TRIANGLES.
-
     g_VirtualScene["cube_faces"] = cube_faces;
-
     SceneObject cube_edges;
     cube_edges.name           = "Cubo (arestas pretas)";
     cube_edges.first_index    = (void*)(36*sizeof(GLuint)); // Primeiro índice está em indices[36]
     cube_edges.num_indices    = 24; // Último índice está em indices[59]; total de 24 índices.
     cube_edges.rendering_mode = GL_LINES; // Índices correspondem ao tipo de rasterização GL_LINES.
-
     // Adicionamos o objeto criado acima na nossa cena virtual (g_VirtualScene).
     g_VirtualScene["cube_edges"] = cube_edges;
-
     // Criamos um terceiro objeto virtual (SceneObject) que se refere aos eixos XYZ.
     SceneObject axes;
     axes.name           = "Eixos XYZ";
@@ -466,31 +635,24 @@ GLuint BuildTriangles() {
     axes.num_indices    = 6; // Último índice está em indices[65]; total de 6 índices.
     axes.rendering_mode = GL_LINES; // Índices correspondem ao tipo de rasterização GL_LINES.
     g_VirtualScene["axes"] = axes;
-
     // Criamos um buffer OpenGL para armazenar os índices acima
     GLuint indices_id;
     glGenBuffers(1, &indices_id);
-
     // "Ligamos" o buffer. Note que o tipo agora é GL_ELEMENT_ARRAY_BUFFER.
     glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indices_id);
-
     // Alocamos memória para o buffer.
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), NULL, GL_STATIC_DRAW);
-
     // Copiamos os valores do array indices[] para dentro do buffer.
     glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, sizeof(indices), indices);
-
     // NÃO faça a chamada abaixo! Diferente de um VBO (GL_ARRAY_BUFFER), um
     // array de índices (GL_ELEMENT_ARRAY_BUFFER) não pode ser "desligado",
     // caso contrário o VAO irá perder a informação sobre os índices.
     //
     // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0); // XXX Errado!
     //
-
     // "Desligamos" o VAO, evitando assim que operações posteriores venham a
     // alterar o mesmo. Isso evita bugs.
     glBindVertexArray(0);
-
     // Retornamos o ID do VAO. Isso é tudo que será necessário para renderizar
     // os triângulos definidos acima. Veja a chamada glDrawElements() em main().
     return vertex_array_object_id;
@@ -625,51 +787,40 @@ void CursorPosCallback(GLFWwindow* window, double xpos, double ypos) {
         // Deslocamento do cursor do mouse em x e y de coordenadas de tela!
         float dx = xpos - g_LastCursorPosX;
         float dy = ypos - g_LastCursorPosY;
-
         // Atualizamos parâmetros da câmera com os deslocamentos
         g_CameraTheta -= 0.01f*dx;
         g_CameraPhi   += 0.01f*dy;
-
         // Em coordenadas esféricas, o ângulo phi deve ficar entre -pi/2 e +pi/2.
         float phimax = 3.141592f/2;
         float phimin = -phimax;
-
         if (g_CameraPhi > phimax)
             g_CameraPhi = phimax;
-
         if (g_CameraPhi < phimin)
             g_CameraPhi = phimin;
-
         // Atualizamos as variáveis globais para armazenar a posição atual do
         // cursor como sendo a última posição conhecida do cursor.
         g_LastCursorPosX = xpos;
         g_LastCursorPosY = ypos;
     }
-
     if (g_RightMouseButtonPressed) {
         // Deslocamento do cursor do mouse em x e y de coordenadas de tela!
         float dx = xpos - g_LastCursorPosX;
         float dy = ypos - g_LastCursorPosY;
-
         // Atualizamos parâmetros da antebraço com os deslocamentos
         g_ForearmAngleZ -= 0.01f*dx;
         g_ForearmAngleX += 0.01f*dy;
-
         // Atualizamos as variáveis globais para armazenar a posição atual do
         // cursor como sendo a última posição conhecida do cursor.
         g_LastCursorPosX = xpos;
         g_LastCursorPosY = ypos;
     }
-
     if (g_MiddleMouseButtonPressed) {
         // Deslocamento do cursor do mouse em x e y de coordenadas de tela!
         float dx = xpos - g_LastCursorPosX;
         float dy = ypos - g_LastCursorPosY;
-
         // Atualizamos parâmetros da antebraço com os deslocamentos
         g_TorsoPositionX += 0.01f*dx;
         g_TorsoPositionY -= 0.01f*dy;
-
         // Atualizamos as variáveis globais para armazenar a posição atual do
         // cursor como sendo a última posição conhecida do cursor.
         g_LastCursorPosX = xpos;
@@ -678,7 +829,7 @@ void CursorPosCallback(GLFWwindow* window, double xpos, double ypos) {
 }
 
 void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset) {
-    g_CameraDistance -= 0.1f*yoffset;
+    g_CameraDistance -= 1.0f*yoffset;
     const float verysmallnumber = std::numeric_limits<float>::epsilon();
     if (g_CameraDistance < verysmallnumber) {
         g_CameraDistance = verysmallnumber;
@@ -689,12 +840,9 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
     for (int i = 0; i < 10; ++i)
         if (key == GLFW_KEY_0 + i && action == GLFW_PRESS && mod == GLFW_MOD_SHIFT)
             std::exit(100 + i);
-
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
         glfwSetWindowShouldClose(window, GL_TRUE);
-
     float delta = 3.141592 / 16; // 22.5 graus, em radianos.
-
     if (key == GLFW_KEY_X && action == GLFW_PRESS) {
         g_AngleX += (mod & GLFW_MOD_SHIFT) ? -delta : delta;
     } else if (key == GLFW_KEY_Y && action == GLFW_PRESS) {
