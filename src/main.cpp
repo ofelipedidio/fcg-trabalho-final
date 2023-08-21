@@ -186,11 +186,8 @@ void displaySystemInfo() {
     printf("GPU: %s, %s, OpenGL %s, GLSL %s\n", vendor, renderer, glversion, glslversion);
 }
 
-#include "test/test.cpp"
-
 int main()
 {
-    test123456();
     GLFWwindow *window = setup();
 
     displaySystemInfo();
