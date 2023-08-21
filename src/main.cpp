@@ -43,6 +43,8 @@
 #include "utils.h"
 #include "matrices.h"
 
+#include "random.h"
+
 // Declaração de várias funções utilizadas em main().  Essas estão definidas
 // logo após a definição de main() neste arquivo.
 void DrawCube(GLint render_as_black_uniform); // Desenha um cubo
@@ -206,8 +208,8 @@ typedef struct Particle {
     float life, maxlife;
 } Particle;
 
-std::vector<Particle> particles(1000);
-int particleIndex = 999;
+std::vector<Particle> particles(100000);
+int particleIndex = 0;
 
 void emit(Particle particle) {
     particles[particleIndex].x = particle.x;
@@ -225,23 +227,8 @@ void emit(Particle particle) {
     particles[particleIndex].maxlife = particle.life;
     particles[particleIndex].active = true;
 
-    particleIndex = (particleIndex-1) % particles.size();
-}
-
-#include <random>
-
-namespace Random {
-    std::mt19937 s_RandomEngine;
-    std::uniform_real_distribution<float> s_Distribution;
-
-    void Init() {
-        s_RandomEngine.seed(std::random_device()());
-        s_Distribution = std::uniform_real_distribution<float>(0.0f, 1.0f);
-    }
-
-    float Float() {
-        return (float)s_Distribution(s_RandomEngine);
-    }
+    particleIndex = (particleIndex+1) % particles.size();
+    std::cout << particleIndex << std::endl;
 }
 
 int main() {
@@ -307,7 +294,7 @@ int main() {
 #define VSIDES 10.0
 
     {
-        float speed = 0.1f;
+        float speed = 1.0f;
         float r = speed;
         for (float i = 0.0f; i < 2.0f*PI; i += (2.0f*PI)/SIDES) {
             for (float j = -PI / 2.0f; j < PI * 2.0f ; j += PI / VSIDES) {
@@ -322,12 +309,12 @@ int main() {
                 particle.ys = y;
                 particle.zs = z;
 
-                particle.xa = -x * 0.001;
-                particle.ya = -y * 0.001;
-                particle.za = -z * 0.001;
+                particle.xa = -x * 0.01;
+                particle.ya = -y * 0.01;
+                particle.za = -z * 0.01;
 
-                particle.ys += 0.1f;
-                particle.ya -= 0.001f;
+                particle.ys += 1.0f;
+                particle.ya -= 1.0f;
 
                 emit(particle);
             }
@@ -335,6 +322,7 @@ int main() {
     }
 
     float aaa;
+    int spawnCount = 0;
     while (!glfwWindowShouldClose(window))
     {
 
@@ -344,7 +332,41 @@ int main() {
 
         aaa += dt;
 
-#define EMIT_INTERVAL 0.01f
+#define EMIT_INTERVAL 0.05f
+
+        while (aaa >= EMIT_INTERVAL && spawnCount < 20) {
+            spawnCount++;
+            aaa -= EMIT_INTERVAL;
+            float speed = 1.0f;
+            float r = speed;
+            for (float i = 0.0f; i < 2.0f*PI; i += (2.0f*PI)/SIDES) {
+                for (float j = -PI / 2.0f; j < PI * 2.0f ; j += PI / VSIDES) {
+                    float y = r*sin(i);
+                    float z = r*cos(i)*cos(j);
+                    float x = r*cos(i)*sin(j);
+
+                    particle.x = 0;
+                    particle.y = 0;
+                    particle.z = 0;
+                    particle.xs = x;
+                    particle.ys = y;
+                    particle.zs = z;
+
+                    particle.xa = -x * 0.01;
+                    particle.ya = -y * 0.01;
+                    particle.za = -z * 0.01;
+
+                    particle.ys += 1.0f;
+                    particle.ya -= 1.0f;
+
+                    particle.beginSize = ((float)(20-spawnCount+1)) * 1.0f / 20.0f;
+                    particle.endSize = 0.0f;
+
+                    emit(particle);
+                }
+            }
+        }
+
         // Constantly emit particles
         /*
         while (aaa >= EMIT_INTERVAL) {
@@ -447,14 +469,12 @@ void onUpdate(float dt) {
             particles[i].active = false;
             continue;
         }
-
-        particles[i].xs += particles[i].xa;
-        particles[i].ys += particles[i].ya;
-        particles[i].zs += particles[i].za;
-        particles[i].x += particles[i].xs;
-        particles[i].y += particles[i].ys;
-        particles[i].z += particles[i].zs;
-
+        particles[i].xs += dt*particles[i].xa/2;
+        particles[i].ys += dt*particles[i].ya/2;
+        particles[i].zs += dt*particles[i].za/2;
+        particles[i].x += dt*particles[i].xs;
+        particles[i].y += dt*particles[i].ys;
+        particles[i].z += dt*particles[i].zs;
     }
 }
 
@@ -463,15 +483,25 @@ void onRender() {
         if (!particles[i].active) {
             continue;
         }
+        // Linear interpolation of lifetime
         float l = 1.0f - (particles[i].life / particles[i].maxlife);
         float s = ((1.0f-l) * particles[i].beginSize) + (l* particles[i].endSize);
+        // Compute transform matrix
         glm::mat4 model = Matrix_Identity();
         auto translate = Matrix_Translate(particles[i].x, particles[i].y, particles[i].z);
         auto scale = Matrix_Scale(s, s, s);
         model *= translate;
         model *= scale;
+        // Transform object
         glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
-        DrawCube(render_as_black_uniform);
+        // Draw object
+        glUniform1i(render_as_black_uniform, false);
+        glDrawElements(
+                g_VirtualScene["cube_faces"].rendering_mode,
+                g_VirtualScene["cube_faces"].num_indices,
+                GL_UNSIGNED_INT,
+                (void*)g_VirtualScene["cube_faces"].first_index
+                );
     }
 }
 
