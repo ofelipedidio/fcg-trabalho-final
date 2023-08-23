@@ -219,6 +219,18 @@ void displaySystemInfo()
 #include "particle.h"
 Particle::ParticleEmitter emitter(10000);
 
+GLint model_uniform;           // Variável da matriz "model"
+GLint view_uniform;            // Variável da matriz "view" em shader_vertex.glsl
+GLint projection_uniform;      // Variável da matriz "projection" em shader_vertex.glsl
+GLint render_as_black_uniform; // Variável booleana em shader_vertex.glsl
+
+#include "particle.h"
+Particle::ParticleEmitter emitter(1000000);
+
+#define PI 3.14159265359
+#define SIDES 20.0
+#define VSIDES 10.0
+
 #include "emitter.h"
 Emitter::ParticleEmitter *e1;
 
@@ -294,10 +306,41 @@ int main()
         Renderer renderer(g_GpuProgramID);
 
         glm::mat4 view;
+        {
+            float r = g_CameraDistance;
+            float y = r * sin(g_CameraPhi);
+            float z = r * cos(g_CameraPhi) * cos(g_CameraTheta);
+            float x = r * cos(g_CameraPhi) * sin(g_CameraTheta);
+            glm::vec4 camera_position_c = glm::vec4(x, y, z, 1.0f);
+            glm::vec4 camera_lookat_l = glm::vec4(0.0f, 100.0f, 0.0f, 1.0f);
+            glm::vec4 camera_view_vector = camera_lookat_l - camera_position_c;
+            glm::vec4 camera_up_vector = glm::vec4(0.0f, 1.0f, 0.0f, 0.0f);
+            view = Matrix_Camera_View(camera_position_c, camera_view_vector, camera_up_vector);
+        }
+
         glm::mat4 projection;
         camera.computeMatrices(view, projection);
         glUniformMatrix4fv(view_uniform, 1, GL_FALSE, glm::value_ptr(view));
         glUniformMatrix4fv(projection_uniform, 1, GL_FALSE, glm::value_ptr(projection));
+        {
+            float nearplane = -0.1f;
+            float farplane = -10000.0f;
+            if (g_UsePerspectiveProjection)
+            {
+                float field_of_view = 3.141592 / 3.0f;
+                projection = Matrix_Perspective(field_of_view, g_ScreenRatio, nearplane, farplane);
+            }
+            else
+            {
+                float t = 1.5f * g_CameraDistance / 2.5f;
+                float b = -t;
+                float r = t * g_ScreenRatio;
+                float l = -r;
+                projection = Matrix_Orthographic(l, r, b, t, nearplane, farplane);
+            }
+            glUniformMatrix4fv(view_uniform, 1, GL_FALSE, glm::value_ptr(view));
+            glUniformMatrix4fv(projection_uniform, 1, GL_FALSE, glm::value_ptr(projection));
+        }
 
         emitter.onUpdate(dt);
         emitter.onRender(renderer);
@@ -331,598 +374,741 @@ int main()
 
 void DrawCube(GLint render_as_black_uniform)
 {
-    glUniform1i(render_as_black_uniform, false);
-    // Cube
-    {
-        glDrawElements(
-            g_VirtualScene["cube_faces"].rendering_mode, // Veja slides 182-188 do documento Aula_04_Modelagem_Geometrica_3D.pdf
-            g_VirtualScene["cube_faces"].num_indices,    //
-            GL_UNSIGNED_INT,
-            (void *)g_VirtualScene["cube_faces"].first_index);
-    }
-    return;
-    // Axes
-    {
-        glLineWidth(4.0f);
-        glDrawElements(
-            g_VirtualScene["axes"].rendering_mode,
-            g_VirtualScene["axes"].num_indices,
-            GL_UNSIGNED_INT,
-            (void *)g_VirtualScene["axes"].first_index);
-    }
-    // Edges
-    {
-        glUniform1i(render_as_black_uniform, true);
-        glDrawElements(
-            g_VirtualScene["cube_edges"].rendering_mode,
-            g_VirtualScene["cube_edges"].num_indices,
-            GL_UNSIGNED_INT,
-            (void *)g_VirtualScene["cube_edges"].first_index);
-    }
-}
 
-GLuint BuildTriangles()
-{
-    GLfloat model_coefficients[] = {
-        // Vértices de um cubo
-        //    X      Y     Z     W
-        -0.5f, 0.0f, 0.5f, 1.0f,   // posição do vértice 0
-        -0.5f, -1.0f, 0.5f, 1.0f,  // posição do vértice 1
-        0.5f, -1.0f, 0.5f, 1.0f,   // posição do vértice 2
-        0.5f, 0.0f, 0.5f, 1.0f,    // posição do vértice 3
-        -0.5f, 0.0f, -0.5f, 1.0f,  // posição do vértice 4
-        -0.5f, -1.0f, -0.5f, 1.0f, // posição do vértice 5
-        0.5f, -1.0f, -0.5f, 1.0f,  // posição do vértice 6
-        0.5f, 0.0f, -0.5f, 1.0f,   // posição do vértice 7
-                                   // Vértices para desenhar o eixo X
-                                   //    X      Y     Z     W
-        0.0f, 0.0f, 0.0f, 1.0f,    // posição do vértice 8
-        1.0f, 0.0f, 0.0f, 1.0f,    // posição do vértice 9
-                                   // Vértices para desenhar o eixo Y
-                                   //    X      Y     Z     W
-        0.0f, 0.0f, 0.0f, 1.0f,    // posição do vértice 10
-        0.0f, 1.0f, 0.0f, 1.0f,    // posição do vértice 11
-                                   // Vértices para desenhar o eixo Z
-                                   //    X      Y     Z     W
-        0.0f, 0.0f, 0.0f, 1.0f,    // posição do vértice 12
-        0.0f, 0.0f, 1.0f, 1.0f,    // posição do vértice 13
-    };
-    // Setup (just so things get to exist)
-    GLuint VBO_model_coefficients_id;
-    glGenBuffers(1, &VBO_model_coefficients_id);
-    GLuint vertex_array_object_id;
-    glGenVertexArrays(1, &vertex_array_object_id);
-    glBindVertexArray(vertex_array_object_id);
-    // Transfer data
-    glBindBuffer(GL_ARRAY_BUFFER, VBO_model_coefficients_id);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(model_coefficients), NULL, GL_STATIC_DRAW);
-    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(model_coefficients), model_coefficients);
-    // Setup shader stuff
-    GLuint location = 0;            // "(location = 0)" em "shader_vertex.glsl"
-    GLint number_of_dimensions = 4; // vec4 em "shader_vertex.glsl"
-    glVertexAttribPointer(location, number_of_dimensions, GL_FLOAT, GL_FALSE, 0, 0);
-    glEnableVertexAttribArray(location);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    GLfloat color_coefficients[] = {
-        // Cores dos vértices do cubo
-        //  R     G     B     A
-        1.0f, 0.5f, 0.0f, 1.0f, // cor do vértice 0
-        1.0f, 0.5f, 0.0f, 1.0f, // cor do vértice 1
-        0.0f, 0.5f, 1.0f, 1.0f, // cor do vértice 2
-        0.0f, 0.5f, 1.0f, 1.0f, // cor do vértice 3
-        1.0f, 0.5f, 0.0f, 1.0f, // cor do vértice 4
-        1.0f, 0.5f, 0.0f, 1.0f, // cor do vértice 5
-        0.0f, 0.5f, 1.0f, 1.0f, // cor do vértice 6
-        0.0f, 0.5f, 1.0f, 1.0f, // cor do vértice 7
-                                // Cores para desenhar o eixo X
-        1.0f, 0.0f, 0.0f, 1.0f, // cor do vértice 8
-        1.0f, 0.0f, 0.0f, 1.0f, // cor do vértice 9
-                                // Cores para desenhar o eixo Y
-        0.0f, 1.0f, 0.0f, 1.0f, // cor do vértice 10
-        0.0f, 1.0f, 0.0f, 1.0f, // cor do vértice 11
-                                // Cores para desenhar o eixo Z
-        0.0f, 0.0f, 1.0f, 1.0f, // cor do vértice 12
-        0.0f, 0.0f, 1.0f, 1.0f, // cor do vértice 13
-    };
-    GLuint VBO_color_coefficients_id;
-    glGenBuffers(1, &VBO_color_coefficients_id);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO_color_coefficients_id);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(color_coefficients), NULL, GL_STATIC_DRAW);
-    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(color_coefficients), color_coefficients);
-    location = 1;             // "(location = 1)" em "shader_vertex.glsl"
-    number_of_dimensions = 4; // vec4 em "shader_vertex.glsl"
-    glVertexAttribPointer(location, number_of_dimensions, GL_FLOAT, GL_FALSE, 0, 0);
-    glEnableVertexAttribArray(location);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    GLuint indices[] = {
-        // Definimos os índices dos vértices que definem as FACES de um cubo
-        // através de 12 triângulos que serão desenhados com o modo de renderização
-        // GL_TRIANGLES.
-        0, 1, 2, // triângulo 1
-        7, 6, 5, // triângulo 2
-        3, 2, 6, // triângulo 3
-        4, 0, 3, // triângulo 4
-        4, 5, 1, // triângulo 5
-        1, 5, 6, // triângulo 6
-        0, 2, 3, // triângulo 7
-        7, 5, 4, // triângulo 8
-        3, 6, 7, // triângulo 9
-        4, 3, 7, // triângulo 10
-        4, 1, 0, // triângulo 11
-        1, 6, 2, // triângulo 12
-                 // Definimos os índices dos vértices que definem as ARESTAS de um cubo
-                 // através de 12 linhas que serão desenhadas com o modo de renderização
-                 // GL_LINES.
-        0, 1,    // linha 1
-        1, 2,    // linha 2
-        2, 3,    // linha 3
-        3, 0,    // linha 4
-        0, 4,    // linha 5
-        4, 7,    // linha 6
-        7, 6,    // linha 7
-        6, 2,    // linha 8
-        6, 5,    // linha 9
-        5, 4,    // linha 10
-        5, 1,    // linha 11
-        7, 3,    // linha 12
-                 // Definimos os índices dos vértices que definem as linhas dos eixos X, Y,
-                 // Z, que serão desenhados com o modo GL_LINES.
-        8, 9,    // linha 1
-        10, 11,  // linha 2
-        12, 13   // linha 3
-    };
-    SceneObject cube_faces;
-    cube_faces.name = "Cubo (faces coloridas)";
-    cube_faces.first_index = (void *)0;       // Primeiro índice está em indices[0]
-    cube_faces.num_indices = 36;              // Último índice está em indices[35]; total de 36 índices.
-    cube_faces.rendering_mode = GL_TRIANGLES; // Índices correspondem ao tipo de rasterização GL_TRIANGLES.
-    g_VirtualScene["cube_faces"] = cube_faces;
-    SceneObject cube_edges;
-    cube_edges.name = "Cubo (arestas pretas)";
-    cube_edges.first_index = (void *)(36 * sizeof(GLuint)); // Primeiro índice está em indices[36]
-    cube_edges.num_indices = 24;                            // Último índice está em indices[59]; total de 24 índices.
-    cube_edges.rendering_mode = GL_LINES;                   // Índices correspondem ao tipo de rasterização GL_LINES.
-    // Adicionamos o objeto criado acima na nossa cena virtual (g_VirtualScene).
-    g_VirtualScene["cube_edges"] = cube_edges;
-    // Criamos um terceiro objeto virtual (SceneObject) que se refere aos eixos XYZ.
-    SceneObject axes;
-    axes.name = "Eixos XYZ";
-    axes.first_index = (void *)(60 * sizeof(GLuint)); // Primeiro índice está em indices[60]
-    axes.num_indices = 6;                             // Último índice está em indices[65]; total de 6 índices.
-    axes.rendering_mode = GL_LINES;                   // Índices correspondem ao tipo de rasterização GL_LINES.
-    g_VirtualScene["axes"] = axes;
-    // Criamos um buffer OpenGL para armazenar os índices acima
-    GLuint indices_id;
-    glGenBuffers(1, &indices_id);
-    // "Ligamos" o buffer. Note que o tipo agora é GL_ELEMENT_ARRAY_BUFFER.
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indices_id);
-    // Alocamos memória para o buffer.
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), NULL, GL_STATIC_DRAW);
-    // Copiamos os valores do array indices[] para dentro do buffer.
-    glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, sizeof(indices), indices);
-    // NÃO faça a chamada abaixo! Diferente de um VBO (GL_ARRAY_BUFFER), um
-    // array de índices (GL_ELEMENT_ARRAY_BUFFER) não pode ser "desligado",
-    // caso contrário o VAO irá perder a informação sobre os índices.
-    //
-    // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0); // XXX Errado!
-    //
-    // "Desligamos" o VAO, evitando assim que operações posteriores venham a
-    // alterar o mesmo. Isso evita bugs.
-    glBindVertexArray(0);
-    // Retornamos o ID do VAO. Isso é tudo que será necessário para renderizar
-    // os triângulos definidos acima. Veja a chamada glDrawElements() em main().
-    return vertex_array_object_id;
-}
-
-GLuint loadVertexShader(const char *filename)
-{
-    GLuint vertex_shader_id = glCreateShader(GL_VERTEX_SHADER);
-    LoadShader(filename, vertex_shader_id);
-    return vertex_shader_id;
-}
-
-GLuint loadFragmentShader(const char *filename)
-{
-    GLuint fragment_shader_id = glCreateShader(GL_FRAGMENT_SHADER);
-    LoadShader(filename, fragment_shader_id);
-    return fragment_shader_id;
-}
-
-void LoadShader(const char *filename, GLuint shader_id)
-{
-    // Le o arquivo do shader
-    std::ifstream file;
-    try
+    void DrawCube(GLint render_as_black_uniform)
     {
-        file.exceptions(std::ifstream::failbit);
-        file.open(filename);
-    }
-    catch (std::exception &e)
-    {
-        fprintf(stderr, "ERROR: Cannot open file \"%s\".\n", filename);
-        std::exit(EXIT_FAILURE);
-    }
-    std::stringstream shader;
-    shader << file.rdbuf();
-    std::string str = shader.str();
-    const GLchar *shader_string = str.c_str();
-    const GLint shader_string_length = static_cast<GLint>(str.length());
-    // Compila o shader
-    glShaderSource(shader_id, 1, &shader_string, &shader_string_length);
-    glCompileShader(shader_id);
-    // Verifica se compilou
-    GLint compiled_ok;
-    glGetShaderiv(shader_id, GL_COMPILE_STATUS, &compiled_ok);
-    GLint log_length = 0;
-    glGetShaderiv(shader_id, GL_INFO_LOG_LENGTH, &log_length);
-    GLchar *log = new GLchar[log_length];
-    glGetShaderInfoLog(shader_id, log_length, &log_length, log);
-    if (log_length != 0)
-    {
-        std::string output;
-        // Loca o erro
-        if (!compiled_ok)
+        glUniform1i(render_as_black_uniform, false);
+        // Cube
         {
-            output += "ERROR: OpenGL compilation of \"";
-            output += filename;
-            output += "\" failed.\n";
-            output += "== Start of compilation log\n";
-            output += log;
-            output += "== End of compilation log\n";
+            glDrawElements(
+                g_VirtualScene["cube_faces"].rendering_mode, // Veja slides 182-188 do documento Aula_04_Modelagem_Geometrica_3D.pdf
+                g_VirtualScene["cube_faces"].num_indices,    //
+                GL_UNSIGNED_INT,
+                (void *)g_VirtualScene["cube_faces"].first_index);
         }
-        else
+        return;
+        // Axes
         {
-            output += "WARNING: OpenGL compilation of \"";
-            output += filename;
-            output += "\".\n";
-            output += "== Start of compilation log\n";
-            output += log;
-            output += "== End of compilation log\n";
+            glLineWidth(4.0f);
+            glDrawElements(
+                g_VirtualScene["axes"].rendering_mode,
+                g_VirtualScene["axes"].num_indices,
+                GL_UNSIGNED_INT,
+                (void *)g_VirtualScene["axes"].first_index);
         }
-        fprintf(stderr, "%s", output.c_str());
+        // Edges
+        {
+            glUniform1i(render_as_black_uniform, true);
+            glDrawElements(
+                g_VirtualScene["cube_edges"].rendering_mode,
+                g_VirtualScene["cube_edges"].num_indices,
+                GL_UNSIGNED_INT,
+                (void *)g_VirtualScene["cube_edges"].first_index);
+        }
     }
-    delete[] log;
-}
 
-void LoadShadersFromFiles()
-{
-    GLuint vertex_shader_id = loadVertexShader("../assets/shader_vertex.glsl");
-    GLuint fragment_shader_id = loadFragmentShader("../assets/shader_fragment.glsl");
-    if (g_GpuProgramID != 0)
-        glDeleteProgram(g_GpuProgramID);
-    g_GpuProgramID = CreateGpuProgram(vertex_shader_id, fragment_shader_id);
-}
-
-GLuint CreateGpuProgram(GLuint vertex_shader_id, GLuint fragment_shader_id)
-{
-    // Create program
-    GLuint program_id = glCreateProgram();
-    // Link shaders
-    glAttachShader(program_id, vertex_shader_id);
-    glAttachShader(program_id, fragment_shader_id);
-    glLinkProgram(program_id);
-    // Check ok
-    GLint linked_ok = GL_FALSE;
-    glGetProgramiv(program_id, GL_LINK_STATUS, &linked_ok);
-    if (linked_ok == GL_FALSE)
+    GLuint BuildTriangles()
     {
-        // Log error
+        GLfloat model_coefficients[] = {
+            // Vértices de um cubo
+            //    X      Y     Z     W
+            -0.5f, 0.0f, 0.5f, 1.0f,   // posição do vértice 0
+            -0.5f, -1.0f, 0.5f, 1.0f,  // posição do vértice 1
+            0.5f, -1.0f, 0.5f, 1.0f,   // posição do vértice 2
+            0.5f, 0.0f, 0.5f, 1.0f,    // posição do vértice 3
+            -0.5f, 0.0f, -0.5f, 1.0f,  // posição do vértice 4
+            -0.5f, -1.0f, -0.5f, 1.0f, // posição do vértice 5
+            0.5f, -1.0f, -0.5f, 1.0f,  // posição do vértice 6
+            0.5f, 0.0f, -0.5f, 1.0f,   // posição do vértice 7
+                                       // Vértices para desenhar o eixo X
+                                       //    X      Y     Z     W
+            0.0f, 0.0f, 0.0f, 1.0f,    // posição do vértice 8
+            1.0f, 0.0f, 0.0f, 1.0f,    // posição do vértice 9
+                                       // Vértices para desenhar o eixo Y
+                                       //    X      Y     Z     W
+            0.0f, 0.0f, 0.0f, 1.0f,    // posição do vértice 10
+            0.0f, 1.0f, 0.0f, 1.0f,    // posição do vértice 11
+                                       // Vértices para desenhar o eixo Z
+                                       //    X      Y     Z     W
+            0.0f, 0.0f, 0.0f, 1.0f,    // posição do vértice 12
+            0.0f, 0.0f, 1.0f, 1.0f,    // posição do vértice 13
+        };
+        // Setup (just so things get to exist)
+        GLuint VBO_model_coefficients_id;
+        glGenBuffers(1, &VBO_model_coefficients_id);
+        GLuint vertex_array_object_id;
+        glGenVertexArrays(1, &vertex_array_object_id);
+        glBindVertexArray(vertex_array_object_id);
+        // Transfer data
+        glBindBuffer(GL_ARRAY_BUFFER, VBO_model_coefficients_id);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(model_coefficients), NULL, GL_STATIC_DRAW);
+        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(model_coefficients), model_coefficients);
+        // Setup shader stuff
+        GLuint location = 0;            // "(location = 0)" em "shader_vertex.glsl"
+        GLint number_of_dimensions = 4; // vec4 em "shader_vertex.glsl"
+        glVertexAttribPointer(location, number_of_dimensions, GL_FLOAT, GL_FALSE, 0, 0);
+        glEnableVertexAttribArray(location);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        GLfloat color_coefficients[] = {
+            // Cores dos vértices do cubo
+            //  R     G     B     A
+            1.0f, 0.5f, 0.0f, 1.0f, // cor do vértice 0
+            1.0f, 0.5f, 0.0f, 1.0f, // cor do vértice 1
+            0.0f, 0.5f, 1.0f, 1.0f, // cor do vértice 2
+            0.0f, 0.5f, 1.0f, 1.0f, // cor do vértice 3
+            1.0f, 0.5f, 0.0f, 1.0f, // cor do vértice 4
+            1.0f, 0.5f, 0.0f, 1.0f, // cor do vértice 5
+            0.0f, 0.5f, 1.0f, 1.0f, // cor do vértice 6
+            0.0f, 0.5f, 1.0f, 1.0f, // cor do vértice 7
+                                    // Cores para desenhar o eixo X
+            1.0f, 0.0f, 0.0f, 1.0f, // cor do vértice 8
+            1.0f, 0.0f, 0.0f, 1.0f, // cor do vértice 9
+                                    // Cores para desenhar o eixo Y
+            0.0f, 1.0f, 0.0f, 1.0f, // cor do vértice 10
+            0.0f, 1.0f, 0.0f, 1.0f, // cor do vértice 11
+                                    // Cores para desenhar o eixo Z
+            0.0f, 0.0f, 1.0f, 1.0f, // cor do vértice 12
+            0.0f, 0.0f, 1.0f, 1.0f, // cor do vértice 13
+        };
+        GLuint VBO_color_coefficients_id;
+        glGenBuffers(1, &VBO_color_coefficients_id);
+        glBindBuffer(GL_ARRAY_BUFFER, VBO_color_coefficients_id);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(color_coefficients), NULL, GL_STATIC_DRAW);
+        glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(color_coefficients), color_coefficients);
+        location = 1;             // "(location = 1)" em "shader_vertex.glsl"
+        number_of_dimensions = 4; // vec4 em "shader_vertex.glsl"
+        glVertexAttribPointer(location, number_of_dimensions, GL_FLOAT, GL_FALSE, 0, 0);
+        glEnableVertexAttribArray(location);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        GLuint indices[] = {
+            // Definimos os índices dos vértices que definem as FACES de um cubo
+            // através de 12 triângulos que serão desenhados com o modo de renderização
+            // GL_TRIANGLES.
+            0, 1, 2, // triângulo 1
+            7, 6, 5, // triângulo 2
+            3, 2, 6, // triângulo 3
+            4, 0, 3, // triângulo 4
+            4, 5, 1, // triângulo 5
+            1, 5, 6, // triângulo 6
+            0, 2, 3, // triângulo 7
+            7, 5, 4, // triângulo 8
+            3, 6, 7, // triângulo 9
+            4, 3, 7, // triângulo 10
+            4, 1, 0, // triângulo 11
+            1, 6, 2, // triângulo 12
+                     // Definimos os índices dos vértices que definem as ARESTAS de um cubo
+                     // através de 12 linhas que serão desenhadas com o modo de renderização
+                     // GL_LINES.
+            0, 1,    // linha 1
+            1, 2,    // linha 2
+            2, 3,    // linha 3
+            3, 0,    // linha 4
+            0, 4,    // linha 5
+            4, 7,    // linha 6
+            7, 6,    // linha 7
+            6, 2,    // linha 8
+            6, 5,    // linha 9
+            5, 4,    // linha 10
+            5, 1,    // linha 11
+            7, 3,    // linha 12
+                     // Definimos os índices dos vértices que definem as linhas dos eixos X, Y,
+                     // Z, que serão desenhados com o modo GL_LINES.
+            8, 9,    // linha 1
+            10, 11,  // linha 2
+            12, 13   // linha 3
+        };
+        SceneObject cube_faces;
+        cube_faces.name = "Cubo (faces coloridas)";
+        cube_faces.first_index = (void *)0;       // Primeiro índice está em indices[0]
+        cube_faces.num_indices = 36;              // Último índice está em indices[35]; total de 36 índices.
+        cube_faces.rendering_mode = GL_TRIANGLES; // Índices correspondem ao tipo de rasterização GL_TRIANGLES.
+        g_VirtualScene["cube_faces"] = cube_faces;
+        SceneObject cube_edges;
+        cube_edges.name = "Cubo (arestas pretas)";
+        cube_edges.first_index = (void *)(36 * sizeof(GLuint)); // Primeiro índice está em indices[36]
+        cube_edges.num_indices = 24;                            // Último índice está em indices[59]; total de 24 índices.
+        cube_edges.rendering_mode = GL_LINES;                   // Índices correspondem ao tipo de rasterização GL_LINES.
+        // Adicionamos o objeto criado acima na nossa cena virtual (g_VirtualScene).
+        g_VirtualScene["cube_edges"] = cube_edges;
+        // Criamos um terceiro objeto virtual (SceneObject) que se refere aos eixos XYZ.
+        SceneObject axes;
+        axes.name = "Eixos XYZ";
+        axes.first_index = (void *)(60 * sizeof(GLuint)); // Primeiro índice está em indices[60]
+        axes.num_indices = 6;                             // Último índice está em indices[65]; total de 6 índices.
+        axes.rendering_mode = GL_LINES;                   // Índices correspondem ao tipo de rasterização GL_LINES.
+        g_VirtualScene["axes"] = axes;
+        // Criamos um buffer OpenGL para armazenar os índices acima
+        GLuint indices_id;
+        glGenBuffers(1, &indices_id);
+        // "Ligamos" o buffer. Note que o tipo agora é GL_ELEMENT_ARRAY_BUFFER.
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indices_id);
+        // Alocamos memória para o buffer.
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), NULL, GL_STATIC_DRAW);
+        // Copiamos os valores do array indices[] para dentro do buffer.
+        glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, sizeof(indices), indices);
+        // NÃO faça a chamada abaixo! Diferente de um VBO (GL_ARRAY_BUFFER), um
+        // array de índices (GL_ELEMENT_ARRAY_BUFFER) não pode ser "desligado",
+        // caso contrário o VAO irá perder a informação sobre os índices.
+        //
+        // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0); // XXX Errado!
+        //
+        // "Desligamos" o VAO, evitando assim que operações posteriores venham a
+        // alterar o mesmo. Isso evita bugs.
+        glBindVertexArray(0);
+        // Retornamos o ID do VAO. Isso é tudo que será necessário para renderizar
+        // os triângulos definidos acima. Veja a chamada glDrawElements() em main().
+        return vertex_array_object_id;
+    }
+
+    GLuint loadVertexShader(const char *filename)
+    {
+        GLuint vertex_shader_id = glCreateShader(GL_VERTEX_SHADER);
+        LoadShader(filename, vertex_shader_id);
+        return vertex_shader_id;
+    }
+
+    GLuint loadFragmentShader(const char *filename)
+    {
+        GLuint fragment_shader_id = glCreateShader(GL_FRAGMENT_SHADER);
+        LoadShader(filename, fragment_shader_id);
+        return fragment_shader_id;
+    }
+
+    void LoadShader(const char *filename, GLuint shader_id)
+    {
+        // Le o arquivo do shader
+        std::ifstream file;
+        try
+        {
+            file.exceptions(std::ifstream::failbit);
+            file.open(filename);
+        }
+        catch (std::exception &e)
+        {
+            fprintf(stderr, "ERROR: Cannot open file \"%s\".\n", filename);
+            std::exit(EXIT_FAILURE);
+        }
+        std::stringstream shader;
+        shader << file.rdbuf();
+        std::string str = shader.str();
+        const GLchar *shader_string = str.c_str();
+        const GLint shader_string_length = static_cast<GLint>(str.length());
+        // Compila o shader
+        glShaderSource(shader_id, 1, &shader_string, &shader_string_length);
+        glCompileShader(shader_id);
+        // Verifica se compilou
+        GLint compiled_ok;
+        glGetShaderiv(shader_id, GL_COMPILE_STATUS, &compiled_ok);
         GLint log_length = 0;
-        glGetProgramiv(program_id, GL_INFO_LOG_LENGTH, &log_length);
+        glGetShaderiv(shader_id, GL_INFO_LOG_LENGTH, &log_length);
         GLchar *log = new GLchar[log_length];
-        glGetProgramInfoLog(program_id, log_length, &log_length, log);
-        std::string output;
-        output += "ERROR: OpenGL linking of program failed.\n";
-        output += "== Start of link log\n";
-        output += log;
-        output += "\n== End of link log\n";
-        delete[] log;
-        fprintf(stderr, "%s", output.c_str());
-    }
-    return program_id;
-}
-
-void FramebufferSizeCallback(GLFWwindow *window, int width, int height)
-{
-    glViewport(0, 0, width, height);
-    camera.screenRatio = ((float)width) / ((float)height);
-    camera.width = (float)width;
-    camera.height = (float)height;
-}
-
-bool g_LeftMouseButtonPressed = false;
-bool g_RightMouseButtonPressed = false;
-bool g_MiddleMouseButtonPressed = false;
-double g_LastCursorPosX, g_LastCursorPosY;
-
-void spawnParticleAt(glm::vec4 position)
-{
-    Particle::ParticleProprieties particle;
-
-    // Configurar o particleProprieties
-    particle.x = position.x;
-    particle.y = position.y;
-    particle.z = position.z;
-    particle.xs = 0;
-    particle.ys = 0;
-    particle.zs = 0;
-    particle.xa = 0;
-    particle.ya = 0;
-    particle.za = 0;
-    particle.rotationX = 0;
-    particle.rotationY = 0;
-    particle.rotationZ = 0;
-    particle.rotationSpeedX = 10000;
-    particle.rotationSpeedY = 10000;
-    particle.rotationSpeedZ = 10000;
-    particle.size = 0.3f;
-    particle.sizeChange = 0.0f;
-    particle.duration = 100000.0f;
-
-    // Carregar o objeto da particula (nesse caso o cubo)
-    RenderObject ro((void *)g_VirtualScene["cube_faces"].first_index, g_VirtualScene["cube_faces"].num_indices, g_VirtualScene["cube_faces"].rendering_mode);
-    particle.object = ro;
-
-    emitter.emit(particle);
-}
-
-void MouseButtonCallback(GLFWwindow *window, int button, int action, int mods)
-{
-    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
-    {
-        glfwGetCursorPos(window, &g_LastCursorPosX, &g_LastCursorPosY);
-        g_LeftMouseButtonPressed = true;
-
-        glm::vec4 camera_position_c;
-        glm::vec4 camera_view_vector;
-        glm::vec4 camera_up_vector = glm::vec4(0.0f, 1.0f, 0.0f, 0.0f);
+        glGetShaderInfoLog(shader_id, log_length, &log_length, log);
+        if (log_length != 0)
         {
-            float r = camera.distance;
-            float y = r * std::sin(camera.phi);
-            float z = r * std::cos(camera.phi) * std::cos(camera.theta);
-            float x = r * std::cos(camera.phi) * std::sin(camera.theta);
-            camera_position_c = glm::vec4(x, y, z, 1.0f);
-            glm::vec4 camera_lookat_l = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
-            camera_view_vector = camera_lookat_l - camera_position_c;
+            std::string output;
+            // Loca o erro
+            if (!compiled_ok)
+            {
+                output += "ERROR: OpenGL compilation of \"";
+                output += filename;
+                output += "\" failed.\n";
+                output += "== Start of compilation log\n";
+                output += log;
+                output += "== End of compilation log\n";
+            }
+            else
+            {
+                output += "WARNING: OpenGL compilation of \"";
+                output += filename;
+                output += "\".\n";
+                output += "== Start of compilation log\n";
+                output += log;
+                output += "== End of compilation log\n";
+            }
+            fprintf(stderr, "%s", output.c_str());
+        }
+        delete[] log;
+    }
+
+    void LoadShadersFromFiles()
+    {
+        GLuint vertex_shader_id = loadVertexShader("../assets/shader_vertex.glsl");
+        GLuint fragment_shader_id = loadFragmentShader("../assets/shader_fragment.glsl");
+        if (g_GpuProgramID != 0)
+            glDeleteProgram(g_GpuProgramID);
+        g_GpuProgramID = CreateGpuProgram(vertex_shader_id, fragment_shader_id);
+    }
+
+    GLuint CreateGpuProgram(GLuint vertex_shader_id, GLuint fragment_shader_id)
+    {
+        // Create program
+        GLuint program_id = glCreateProgram();
+        // Link shaders
+        glAttachShader(program_id, vertex_shader_id);
+        glAttachShader(program_id, fragment_shader_id);
+        glLinkProgram(program_id);
+        // Check ok
+        GLint linked_ok = GL_FALSE;
+        glGetProgramiv(program_id, GL_LINK_STATUS, &linked_ok);
+        if (linked_ok == GL_FALSE)
+        {
+            // Log error
+            GLint log_length = 0;
+            glGetProgramiv(program_id, GL_INFO_LOG_LENGTH, &log_length);
+            GLchar *log = new GLchar[log_length];
+            glGetProgramInfoLog(program_id, log_length, &log_length, log);
+            std::string output;
+            output += "ERROR: OpenGL linking of program failed.\n";
+            output += "== Start of link log\n";
+            output += log;
+            output += "\n== End of link log\n";
+            delete[] log;
+            fprintf(stderr, "%s", output.c_str());
+        }
+        return program_id;
+    }
+
+    void FramebufferSizeCallback(GLFWwindow * window, int width, int height)
+    {
+        glViewport(0, 0, width, height);
+        camera.screenRatio = ((float)width) / ((float)height);
+        camera.width = (float)width;
+        camera.height = (float)height;
+    }
+
+    bool g_LeftMouseButtonPressed = false;
+    bool g_RightMouseButtonPressed = false;
+    bool g_MiddleMouseButtonPressed = false;
+    double g_LastCursorPosX, g_LastCursorPosY;
+
+    void spawnParticleAt(glm::vec4 position)
+    {
+        Particle::ParticleProprieties particle;
+
+        // Configurar o particleProprieties
+        particle.x = position.x;
+        particle.y = position.y;
+        particle.z = position.z;
+        particle.xs = 0;
+        particle.ys = 0;
+        particle.zs = 0;
+        particle.xa = 0;
+        particle.ya = 0;
+        particle.za = 0;
+        particle.rotationX = 0;
+        particle.rotationY = 0;
+        particle.rotationZ = 0;
+        particle.rotationSpeedX = 10000;
+        particle.rotationSpeedY = 10000;
+        particle.rotationSpeedZ = 10000;
+        particle.size = 0.3f;
+        particle.sizeChange = 0.0f;
+        particle.duration = 100000.0f;
+
+        // Carregar o objeto da particula (nesse caso o cubo)
+        RenderObject ro((void *)g_VirtualScene["cube_faces"].first_index, g_VirtualScene["cube_faces"].num_indices, g_VirtualScene["cube_faces"].rendering_mode);
+        particle.object = ro;
+
+        emitter.emit(particle);
+    }
+
+    void MouseButtonCallback(GLFWwindow * window, int button, int action, int mods)
+    {
+        if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
+        {
+            glfwGetCursorPos(window, &g_LastCursorPosX, &g_LastCursorPosY);
+            g_LeftMouseButtonPressed = true;
+
+            glm::vec4 camera_position_c;
+            glm::vec4 camera_view_vector;
+            glm::vec4 camera_up_vector = glm::vec4(0.0f, 1.0f, 0.0f, 0.0f);
+            {
+                float r = camera.distance;
+                float y = r * std::sin(camera.phi);
+                float z = r * std::cos(camera.phi) * std::cos(camera.theta);
+                float x = r * std::cos(camera.phi) * std::sin(camera.theta);
+                camera_position_c = glm::vec4(x, y, z, 1.0f);
+                glm::vec4 camera_lookat_l = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+                camera_view_vector = camera_lookat_l - camera_position_c;
+            }
+
+            /*
+            camera_view_vector /= -norm(camera_view_vector);
+
+            float t = std::fabs(camera.nearPlane) * tanf(camera.field_of_view / 2.0f);
+            float b = -t;
+            float r = t * camera.screenRatio;
+            float l = -r;
+
+            glm::vec4 point_right = crossproduct(camera_up_vector, camera_view_vector);
+            glm::vec4 point_up = crossproduct(camera_view_vector, point_right);
+
+            camera_view_vector *= camera.nearPlane;
+
+            point_right *= std::abs(r) * 1.333333f;
+            point_up *= std::abs(t) * 1.333333f;
+
+            glm::vec4 bl = camera_position_c - (point_right) - (point_up) + (camera_view_vector);
+            glm::vec4 tr = camera_position_c + (point_right) + (point_up) + (camera_view_vector);
+
+            glm::mat4 view;
+            glm::mat4 projection;
+            camera.computeMatrices(view, projection);
+            view = glm::inverse(view);
+
+            //spawnParticleAt(bl);
+            //spawnParticleAt(tr);
+
+            double mouseX, mouseY;
+            glfwGetCursorPos(window, &mouseX, &mouseY);
+
+            float xFactor = (float) ((mouseX / camera.width) * 2.0f - 1.0f);
+            float yFactor = (float) ((mouseY / camera.height) * -2.0f + 1.0f);
+
+            glm::vec4 spacePosition = camera_position_c + (xFactor*point_right) + (yFactor*point_up) + (camera_view_vector);
+            // spawnParticleAt(spacePosition);
+
+            glm::vec4 a = spacePosition - camera_position_c;
+             */
+
+            collision::Plane floor = {{0, 0, 0}, {0, 1, 0}};
+            collision::Ray ray = {{camera_position_c.x, camera_position_c.y, camera_position_c.z}, {camera_view_vector.x, camera_view_vector.y, camera_view_vector.z}};
+            // collision::Ray ray = {{camera_position_c.x, camera_position_c.y, camera_position_c.z}, {camera_view_vector.x, camera_view_vector.y, camera_view_vector.z}};
+
+            float time = collision::collide(floor, ray);
+
+            collision::Point p = ray.at(time);
+            glm::vec4 pp = glm::vec4(p.x, p.y, p.z, 1.0f);
+            spawnParticleAt(pp);
+        }
+        else if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE)
+        {
+            g_LeftMouseButtonPressed = false;
+        }
+        else if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS)
+        {
+            glfwGetCursorPos(window, &g_LastCursorPosX, &g_LastCursorPosY);
+            g_RightMouseButtonPressed = true;
+        }
+        else if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_RELEASE)
+        {
+            g_RightMouseButtonPressed = false;
+        }
+        else if (button == GLFW_MOUSE_BUTTON_MIDDLE && action == GLFW_PRESS)
+        {
+            glfwGetCursorPos(window, &g_LastCursorPosX, &g_LastCursorPosY);
+            g_MiddleMouseButtonPressed = true;
+        }
+        else if (button == GLFW_MOUSE_BUTTON_MIDDLE && action == GLFW_RELEASE)
+        {
+            g_MiddleMouseButtonPressed = false;
+        }
+    }
+
+    void CursorPosCallback(GLFWwindow * window, double xpos, double ypos)
+    {
+        float dx = xpos - g_LastCursorPosX;
+        float dy = ypos - g_LastCursorPosY;
+        if (g_LeftMouseButtonPressed)
+        {
+            // Atualizamos parâmetros da câmera com os deslocamentos
+            camera.theta -= 0.01f * dx;
+            camera.phi += 0.01f * dy;
+            // Em coordenadas esféricas, o ângulo phi deve ficar entre -pi/2 e +pi/2.
+            float phimax = 3.141592f / 2;
+            float phimin = -phimax;
+            if (camera.phi > phimax)
+                camera.phi = phimax;
+            if (camera.phi < phimin)
+                camera.phi = phimin;
+            // Atualizamos as variáveis globais para armazenar a posição atual do
+            // cursor como sendo a última posição conhecida do cursor.
+            g_LastCursorPosX = xpos;
+            g_LastCursorPosY = ypos;
+        }
+        if (g_RightMouseButtonPressed)
+        {
+            // Deslocamento do cursor do mouse em x e y de coordenadas de tela!
+        }
+        if (g_MiddleMouseButtonPressed)
+        {
+        }
+    }
+
+    void ScrollCallback(GLFWwindow * window, double xoffset, double yoffset)
+    {
+        camera.distance -= 1.0f * yoffset;
+        const float verySmallNumber = std::numeric_limits<float>::epsilon();
+        if (camera.distance < verySmallNumber)
+        {
+            camera.distance = verySmallNumber;
+        }
+    }
+
+    void sphericalFirework()
+    {
+        Particle::ParticleProprieties particle;
+
+        // Configurar o particleProprieties
+        particle.x = 0;
+        particle.y = 0;
+        particle.z = 0;
+        // speed
+        particle.xs = 0;
+        particle.ys = 0;
+        particle.zs = 0;
+        // acceleration
+        particle.xa = 0;
+        particle.ya = 0;
+        particle.za = 0;
+        // initial rotation
+        particle.rotationX = 0;
+        particle.rotationY = 0;
+        particle.rotationZ = 0;
+        // final rotation
+        particle.rotationSpeedX = 0;
+        particle.rotationSpeedY = 0;
+        particle.rotationSpeedZ = 0;
+        particle.size = 1.0f;
+        particle.sizeChange = -1.0f;
+        particle.duration = 8.0f;
+        // Carregar o objeto da particula (nesse caso o cubo)
+        RenderObject ro((void *)g_VirtualScene["cube_faces"].first_index, g_VirtualScene["cube_faces"].num_indices, g_VirtualScene["cube_faces"].rendering_mode);
+        particle.object = ro;
+
+        float explosionDelay = 5.0f;
+        float explosionHeight = 200.0f;
+
+        {
+            // Configurar o particleProprieties
+            particle.x = 0;
+            particle.y = 0;
+            particle.z = 0;
+            particle.xa = 0;
+            particle.ya = -1.0f;
+            particle.za = 0;
+            particle.xs = 0;
+            particle.ys = (explosionHeight / explosionDelay) - (particle.ya * explosionDelay / 2.0f);
+            particle.zs = 0;
+            particle.rotationX = 0;
+            particle.rotationY = 0;
+            particle.rotationZ = 0;
+            particle.rotationSpeedX = 0;
+            particle.rotationSpeedY = 0;
+            particle.rotationSpeedZ = 0;
+            particle.duration = explosionDelay;
+
+            for (float i = 0; i < 0.5f; i += 0.05)
+            {
+                particle.size = 5.0f * ((0.5f - i) / 0.5f);
+                particle.sizeChange = -particle.size * 0.1;
+                emitter.emitIn(particle, i);
+            }
         }
 
-        /*
-        camera_view_vector /= -norm(camera_view_vector);
+        {
+            // Configurar o particleProprieties
+            particle.x = 0;
+            particle.y = 0;
+            particle.z = 0;
+            particle.xs = 0;
+            particle.ys = 0;
+            particle.zs = 0;
+            particle.xa = 0;
+            particle.ya = 0;
+            particle.za = 0;
+            particle.rotationX = 0;
+            particle.rotationY = 0;
+            particle.rotationZ = 0;
+            particle.rotationSpeedX = 0;
+            particle.rotationSpeedY = 0;
+            particle.rotationSpeedZ = 0;
+            particle.size = 1.0f;
+            particle.sizeChange = -1.0f;
+            particle.duration = 8.0f;
 
-        float t = std::fabs(camera.nearPlane) * tanf(camera.field_of_view / 2.0f);
-        float b = -t;
-        float r = t * camera.screenRatio;
-        float l = -r;
-
-        glm::vec4 point_right = crossproduct(camera_up_vector, camera_view_vector);
-        glm::vec4 point_up = crossproduct(camera_view_vector, point_right);
-
-        camera_view_vector *= camera.nearPlane;
-
-        point_right *= std::abs(r) * 1.333333f;
-        point_up *= std::abs(t) * 1.333333f;
-
-        glm::vec4 bl = camera_position_c - (point_right) - (point_up) + (camera_view_vector);
-        glm::vec4 tr = camera_position_c + (point_right) + (point_up) + (camera_view_vector);
-
-        glm::mat4 view;
-        glm::mat4 projection;
-        camera.computeMatrices(view, projection);
-        view = glm::inverse(view);
-
-        //spawnParticleAt(bl);
-        //spawnParticleAt(tr);
-
-        double mouseX, mouseY;
-        glfwGetCursorPos(window, &mouseX, &mouseY);
-
-        float xFactor = (float) ((mouseX / camera.width) * 2.0f - 1.0f);
-        float yFactor = (float) ((mouseY / camera.height) * -2.0f + 1.0f);
-
-        glm::vec4 spacePosition = camera_position_c + (xFactor*point_right) + (yFactor*point_up) + (camera_view_vector);
-        // spawnParticleAt(spacePosition);
-
-        glm::vec4 a = spacePosition - camera_position_c;
-         */
-
-        collision::Plane floor = {{0, 0, 0}, {0, 1, 0}};
-        collision::Ray ray = {{camera_position_c.x, camera_position_c.y, camera_position_c.z}, {camera_view_vector.x, camera_view_vector.y, camera_view_vector.z}};
-        // collision::Ray ray = {{camera_position_c.x, camera_position_c.y, camera_position_c.z}, {camera_view_vector.x, camera_view_vector.y, camera_view_vector.z}};
-
-        float time = collision::collide(floor, ray);
-
-        collision::Point p = ray.at(time);
-        glm::vec4 pp = glm::vec4(p.x, p.y, p.z, 1.0f);
-        spawnParticleAt(pp);
-    }
-    else if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE)
-    {
-        g_LeftMouseButtonPressed = false;
-    }
-    else if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS)
-    {
-        glfwGetCursorPos(window, &g_LastCursorPosX, &g_LastCursorPosY);
-        g_RightMouseButtonPressed = true;
-    }
-    else if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_RELEASE)
-    {
-        g_RightMouseButtonPressed = false;
-    }
-    else if (button == GLFW_MOUSE_BUTTON_MIDDLE && action == GLFW_PRESS)
-    {
-        glfwGetCursorPos(window, &g_LastCursorPosX, &g_LastCursorPosY);
-        g_MiddleMouseButtonPressed = true;
-    }
-    else if (button == GLFW_MOUSE_BUTTON_MIDDLE && action == GLFW_RELEASE)
-    {
-        g_MiddleMouseButtonPressed = false;
-    }
-}
-
-void CursorPosCallback(GLFWwindow *window, double xpos, double ypos)
-{
-    float dx = xpos - g_LastCursorPosX;
-    float dy = ypos - g_LastCursorPosY;
-    if (g_LeftMouseButtonPressed)
-    {
-        // Atualizamos parâmetros da câmera com os deslocamentos
-        camera.theta -= 0.01f * dx;
-        camera.phi += 0.01f * dy;
-        // Em coordenadas esféricas, o ângulo phi deve ficar entre -pi/2 e +pi/2.
-        float phimax = 3.141592f / 2;
-        float phimin = -phimax;
-        if (camera.phi > phimax)
-            camera.phi = phimax;
-        if (camera.phi < phimin)
-            camera.phi = phimin;
-        // Atualizamos as variáveis globais para armazenar a posição atual do
-        // cursor como sendo a última posição conhecida do cursor.
-        g_LastCursorPosX = xpos;
-        g_LastCursorPosY = ypos;
-    }
-    if (g_RightMouseButtonPressed)
-    {
-        // Deslocamento do cursor do mouse em x e y de coordenadas de tela!
-    }
-    if (g_MiddleMouseButtonPressed)
-    {
-    }
-}
-
-void ScrollCallback(GLFWwindow *window, double xoffset, double yoffset)
-{
-    camera.distance -= 1.0f * yoffset;
-    const float verySmallNumber = std::numeric_limits<float>::epsilon();
-    if (camera.distance < verySmallNumber)
-    {
-        camera.distance = verySmallNumber;
-    }
-}
-
-void sphericalFirework()
-{
-    Particle::ParticleProprieties particle;
-
-    // Configurar o particleProprieties
-    particle.x = 0;
-    particle.y = 0;
-    particle.z = 0;
-    // speed
-    particle.xs = 0;
-    particle.ys = 0;
-    particle.zs = 0;
-    // acceleration
-    particle.xa = 0;
-    particle.ya = 0;
-    particle.za = 0;
-    // initial rotation
-    particle.rotationX = 0;
-    particle.rotationY = 0;
-    particle.rotationZ = 0;
-    // final rotation
-    particle.rotationSpeedX = 0;
-    particle.rotationSpeedY = 0;
-    particle.rotationSpeedZ = 0;
-    particle.size = 1.0f;
-    particle.sizeChange = -1.0f;
-    particle.duration = 8.0f;
-
-    // Carregar o objeto da particula (nesse caso o cubo)
-    RenderObject ro((void *)g_VirtualScene["cube_faces"].first_index, g_VirtualScene["cube_faces"].num_indices, g_VirtualScene["cube_faces"].rendering_mode);
-    particle.object = ro;
+            // Carregar o objeto da particula (nesse caso o cubo)
+            RenderObject ro((void *)g_VirtualScene["cube_faces"].first_index, g_VirtualScene["cube_faces"].num_indices, g_VirtualScene["cube_faces"].rendering_mode);
+            particle.object = ro;
 
 #define PI 3.141592
 #define SIDES 15
 #define VSIDES 15
 
-    {
-        float speed = 1.0f;
-        float r = speed;
-        for (float i = 0.0f; i < 2.0f * PI; i += (2.0f * PI) / SIDES)
-        {
-            for (float j = -PI / 2.0f; j < PI * 2.0f; j += PI / VSIDES)
             {
-                float y = r * sin(i);
-                float z = r * cos(i) * cos(j);
-                float x = r * cos(i) * sin(j);
-
-                particle.x = 0;
-                particle.y = 30.0f; // height
-                particle.z = 0;
-                particle.xs = x;
-                particle.ys = y;
-                particle.zs = z;
-
-                particle.xa = -x * 0.05;
-                particle.ya = -y * 0.05;
-                particle.za = -z * 0.05;
-
-                particle.ys += 1.0f;
-                particle.ya -= 1.0f;
-
-                // scale factor
-                particle.xs *= 20;
-                particle.ys *= 20;
-                particle.zs *= 20;
-                particle.xa *= 20;
-                particle.ya *= 20;
-                particle.za *= 20;
-
-                particle.xs += (Random::Float() * 2.0f - 1.0f) * 0.02;
-                particle.ys += (Random::Float() * 2.0f - 1.0f) * 0.02;
-                particle.zs += (Random::Float() * 2.0f - 1.0f) * 0.02;
-
-                particle.rotationSpeedX += (Random::Float() * 2.0f - 1.0f) * 0.2;
-                particle.rotationSpeedY += (Random::Float() * 2.0f - 1.0f) * 0.2;
-                particle.rotationSpeedZ += (Random::Float() * 2.0f - 1.0f) * 0.2;
-
-                particle.duration = 6.0f + 0.5f * (Random::Float() * 2.0f - 1.0f);
-
-                for (int k = 0; k < 20; k++)
+                float speed = 1.0f;
+                float r = speed;
+                for (float i = 0.0f; i < 2.0f * PI; i += (2.0f * PI) / SIDES)
                 {
-                    particle.size = (20.0 - k) / 20.0f;
-                    particle.sizeChange = -particle.size;
-                    emitter.emitIn(particle, k / 20.0f);
+                    for (float j = -PI / 2.0f; j < PI * 2.0f; j += PI / VSIDES)
+                    {
+                        float y = r * sin(i);
+                        float z = r * cos(i) * cos(j);
+                        float x = r * cos(i) * sin(j);
+                        float speed = 1.0f;
+                        float r = speed;
+                        for (float i = 0.0f; i < 2.0f * PI; i += (2.0f * PI) / SIDES)
+                        {
+                            for (float j = -PI / 2.0f; j < PI * 2.0f; j += PI / VSIDES)
+                            {
+                                float y = r * sin(i);
+                                float z = r * cos(i) * cos(j);
+                                float x = r * cos(i) * sin(j);
+
+                                particle.x = 0;
+                                particle.y = 30.0f; // height
+                                particle.z = 0;
+                                particle.xs = x;
+                                particle.ys = y;
+                                particle.zs = z;
+                                particle.x = 0;
+                                particle.y = explosionHeight;
+                                particle.z = 0;
+                                particle.xs = x;
+                                particle.ys = y;
+                                particle.zs = z;
+
+                                particle.xa = -x * 0.05;
+                                particle.ya = -y * 0.05;
+                                particle.za = -z * 0.05;
+
+                                particle.ys += 1.0f;
+                                particle.ya -= 1.0f;
+
+                                // scale factor
+                                particle.xs *= 20;
+                                particle.ys *= 20;
+                                particle.zs *= 20;
+                                particle.xa *= 20;
+                                particle.ya *= 20;
+                                particle.za *= 20;
+
+                                particle.xs += (Random::Float() * 2.0f - 1.0f) * 0.02;
+                                particle.ys += (Random::Float() * 2.0f - 1.0f) * 0.02;
+                                particle.zs += (Random::Float() * 2.0f - 1.0f) * 0.02;
+
+                                particle.rotationSpeedX += (Random::Float() * 2.0f - 1.0f) * 0.2;
+                                particle.rotationSpeedY += (Random::Float() * 2.0f - 1.0f) * 0.2;
+                                particle.rotationSpeedZ += (Random::Float() * 2.0f - 1.0f) * 0.2;
+
+                                particle.duration = 6.0f + 0.5f * (Random::Float() * 2.0f - 1.0f);
+
+                                for (int k = 0; k < 20; k++)
+                                {
+                                    particle.size = (20.0 - k) / 20.0f;
+                                    particle.sizeChange = -particle.size;
+                                    emitter.emitIn(particle, k / 20.0f);
+                                }
+                            }
+                        }
+                    }
+                }
+                void KeyCallback(GLFWwindow * window, int key, int scancode, int action, int mod)
+                {
+                    for (int i = 0; i < 10; ++i)
+                        if (key == GLFW_KEY_0 + i && action == GLFW_PRESS && mod == GLFW_MOD_SHIFT)
+                            std::exit(100 + i);
+                    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+                        glfwSetWindowShouldClose(window, GL_TRUE);
+                    if (key == GLFW_KEY_X && action == GLFW_PRESS)
+                    {
+                    }
+                    else if (key == GLFW_KEY_Y && action == GLFW_PRESS)
+                    {
+                    }
+                    else if (key == GLFW_KEY_Z && action == GLFW_PRESS)
+                    {
+                    }
+                    else if (key == GLFW_KEY_SPACE && action == GLFW_PRESS)
+                    {
+                    }
+                    else if (key == GLFW_KEY_P && action == GLFW_PRESS)
+                    {
+                        camera.usePerspectiveProjection = true;
+                    }
+                    else if (key == GLFW_KEY_O && action == GLFW_PRESS)
+                    {
+                        camera.usePerspectiveProjection = false;
+                    }
+                    else if (key == GLFW_KEY_H && action == GLFW_PRESS)
+                    {
+                        g_ShowInfoText = !g_ShowInfoText;
+                    }
+                    else if (key == GLFW_KEY_F && action == GLFW_PRESS)
+                    {
+                        sphericalFirework();
+                    }
+                    for (int k = 0; k < 20; k++)
+                    {
+                        particle.size = (20.0 - k) / 20.0f;
+                        particle.sizeChange = -particle.size;
+                        emitter.emitIn(particle, explosionDelay + (k / 20.0f));
+                    }
                 }
             }
         }
     }
 }
-void KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mod)
+
+void ErrorCallback(int error, const char *description)
 {
-    for (int i = 0; i < 10; ++i)
-        if (key == GLFW_KEY_0 + i && action == GLFW_PRESS && mod == GLFW_MOD_SHIFT)
-            std::exit(100 + i);
-    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
-        glfwSetWindowShouldClose(window, GL_TRUE);
-    if (key == GLFW_KEY_X && action == GLFW_PRESS)
-    {
-    }
-    else if (key == GLFW_KEY_Y && action == GLFW_PRESS)
-    {
-    }
-    else if (key == GLFW_KEY_Z && action == GLFW_PRESS)
-    {
-    }
-    else if (key == GLFW_KEY_SPACE && action == GLFW_PRESS)
-    {
-    }
-    else if (key == GLFW_KEY_P && action == GLFW_PRESS)
-    {
-        camera.usePerspectiveProjection = true;
-    }
-    else if (key == GLFW_KEY_O && action == GLFW_PRESS)
-    {
-        camera.usePerspectiveProjection = false;
-    }
-    else if (key == GLFW_KEY_H && action == GLFW_PRESS)
-    {
-        g_ShowInfoText = !g_ShowInfoText;
-    }
-    else if (key == GLFW_KEY_F && action == GLFW_PRESS)
-    {
-        sphericalFirework();
-    }
+    fprintf(stderr, "ERROR: GLFW: %s\n", description);
+}
+
+void TextRendering_ShowModelViewProjection(
+    GLFWwindow *window,
+    glm::mat4 projection,
+    glm::mat4 view,
+    glm::mat4 model,
+    glm::vec4 p_model)
+{
+    if (!g_ShowInfoText)
+        return;
+
+    glm::vec4 p_world = model * p_model;
+    glm::vec4 p_camera = view * p_world;
+    glm::vec4 p_clip = projection * p_camera;
+    glm::vec4 p_ndc = p_clip / p_clip.w;
+
+    float pad = TextRendering_LineHeight(window);
+
+    TextRendering_PrintString(window, " Model matrix             Model     In World Coords.", -1.0f, 1.0f - pad, 1.0f);
+    TextRendering_PrintMatrixVectorProduct(window, model, p_model, -1.0f, 1.0f - 2 * pad, 1.0f);
+
+    TextRendering_PrintString(window, "                                        |  ", -1.0f, 1.0f - 6 * pad, 1.0f);
+    TextRendering_PrintString(window, "                            .-----------'  ", -1.0f, 1.0f - 7 * pad, 1.0f);
+    TextRendering_PrintString(window, "                            V              ", -1.0f, 1.0f - 8 * pad, 1.0f);
+
+    TextRendering_PrintString(window, " View matrix              World     In Camera Coords.", -1.0f, 1.0f - 9 * pad, 1.0f);
+    TextRendering_PrintMatrixVectorProduct(window, view, p_world, -1.0f, 1.0f - 10 * pad, 1.0f);
+
+    TextRendering_PrintString(window, "                                        |  ", -1.0f, 1.0f - 14 * pad, 1.0f);
+    TextRendering_PrintString(window, "                            .-----------'  ", -1.0f, 1.0f - 15 * pad, 1.0f);
+    TextRendering_PrintString(window, "                            V              ", -1.0f, 1.0f - 16 * pad, 1.0f);
+
+    TextRendering_PrintString(window, " Projection matrix        Camera                    In NDC", -1.0f, 1.0f - 17 * pad, 1.0f);
+    TextRendering_PrintMatrixVectorProductDivW(window, projection, p_camera, -1.0f, 1.0f - 18 * pad, 1.0f);
+
+    int width, height;
+    glfwGetFramebufferSize(window, &width, &height);
+
+    glm::vec2 a = glm::vec2(-1, -1);
+    glm::vec2 b = glm::vec2(+1, +1);
+    glm::vec2 p = glm::vec2(0, 0);
+    glm::vec2 q = glm::vec2(width, height);
+
+    glm::mat4 viewport_mapping = Matrix(
+        (q.x - p.x) / (b.x - a.x), 0.0f, 0.0f, (b.x * p.x - a.x * q.x) / (b.x - a.x),
+        0.0f, (q.y - p.y) / (b.y - a.y), 0.0f, (b.y * p.y - a.y * q.y) / (b.y - a.y),
+        0.0f, 0.0f, 1.0f, 0.0f,
+        0.0f, 0.0f, 0.0f, 1.0f);
+
+    TextRendering_PrintString(window, "                                                       |  ", -1.0f, 1.0f - 22 * pad, 1.0f);
+    TextRendering_PrintString(window, "                            .--------------------------'  ", -1.0f, 1.0f - 23 * pad, 1.0f);
+    TextRendering_PrintString(window, "                            V                           ", -1.0f, 1.0f - 24 * pad, 1.0f);
+
+    TextRendering_PrintString(window, " Viewport matrix           NDC      In Pixel Coords.", -1.0f, 1.0f - 25 * pad, 1.0f);
+    TextRendering_PrintMatrixVectorProductMoreDigits(window, viewport_mapping, p_ndc, -1.0f, 1.0f - 26 * pad, 1.0f);
 }
 
 void ErrorCallback(int error, const char *description)
