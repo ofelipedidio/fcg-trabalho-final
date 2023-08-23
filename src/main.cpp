@@ -188,48 +188,18 @@ void displaySystemInfo() {
     printf("GPU: %s, %s, OpenGL %s, GLSL %s\n", vendor, renderer, glversion, glslversion);
 }
 
-void onUpdate(float dt);
-void onRender();
-
 GLint model_uniform           ; // Variável da matriz "model"
 GLint view_uniform            ; // Variável da matriz "view" em shader_vertex.glsl
 GLint projection_uniform      ; // Variável da matriz "projection" em shader_vertex.glsl
 GLint render_as_black_uniform ; // Variável booleana em shader_vertex.glsl
 
-typedef struct ParticleS {
-    bool active = false;
-    float x, y, z;
-    float xs, ys, zs;
-    float xa, ya, za;
-    float beginSize, endSize;
-    float life, maxlife;
-} ParticleS;
-
-std::vector<ParticleS> particles(1000000);
-int particleIndex = 0;
-
-void emit(ParticleS particle) {
-    particles[particleIndex].x = particle.x;
-    particles[particleIndex].y = particle.y;
-    particles[particleIndex].z = particle.z;
-    particles[particleIndex].xs = particle.xs;
-    particles[particleIndex].ys = particle.ys;
-    particles[particleIndex].zs = particle.zs;
-    particles[particleIndex].xa = particle.xa;
-    particles[particleIndex].ya = particle.ya;
-    particles[particleIndex].za = particle.za;
-    particles[particleIndex].beginSize = particle.beginSize;
-    particles[particleIndex].endSize = particle.endSize;
-    particles[particleIndex].life = particle.life;
-    particles[particleIndex].maxlife = particle.life;
-    particles[particleIndex].active = true;
-
-    particleIndex = (particleIndex+1) % particles.size();
-    // std::cout << particleIndex << std::endl;
-}
-
 #include "particle.h"
-Particle::ParticleEmitter emitter(10000);
+Particle::ParticleEmitter emitter(1000000);
+
+#define PI 3.14159265359
+#define SIDES 20.0
+#define VSIDES 10.0
+
 
 int main() {
     GLFWwindow *window = setup();
@@ -258,10 +228,6 @@ int main() {
     float previousTime = glfwGetTime();
     Random::Init();
 
-#define PI 3.14159265359
-#define SIDES 20.0
-#define VSIDES 10.0
-
     float aaa;
     int spawnCount = 0;
     while (!glfwWindowShouldClose(window))
@@ -270,46 +236,7 @@ int main() {
         double currentTime = glfwGetTime();
         float dt = currentTime - previousTime;
         previousTime = currentTime;
-
-        aaa += dt;
-
-#define EMIT_INTERVAL 0.05f
-
-        /*
-        while (aaa >= EMIT_INTERVAL && spawnCount < 20) {
-            spawnCount++;
-            aaa -= EMIT_INTERVAL;
-            float speed = 1.0f;
-            float r = speed;
-            for (float i = 0.0f; i < 2.0f*PI; i += (2.0f*PI)/SIDES) {
-                for (float j = -PI / 2.0f; j < PI * 2.0f ; j += PI / VSIDES) {
-                    float y = r*sin(i);
-                    float z = r*cos(i)*cos(j);
-                    float x = r*cos(i)*sin(j);
-
-                    particle.x = 0;
-                    particle.y = 0;
-                    particle.z = 0;
-                    particle.xs = x;
-                    particle.ys = y;
-                    particle.zs = z;
-
-                    particle.xa = -x * 0.01;
-                    particle.ya = -y * 0.01;
-                    particle.za = -z * 0.01;
-
-                    particle.ys += 1.0f;
-                    particle.ya -= 1.0f;
-
-                    particle.beginSize = ((float)(20-spawnCount+1)) * 1.0f / 20.0f;
-                    particle.endSize = 0.0f;
-
-                    emit(particle);
-                }
-            }
-        }
-        */
-
+        
         // Clear screen
         glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -330,7 +257,7 @@ int main() {
             float z = r*cos(g_CameraPhi)*cos(g_CameraTheta);
             float x = r*cos(g_CameraPhi)*sin(g_CameraTheta);
             glm::vec4 camera_position_c  = glm::vec4(x,y,z,1.0f);
-            glm::vec4 camera_lookat_l    = glm::vec4(0.0f,0.0f,0.0f,1.0f);
+            glm::vec4 camera_lookat_l    = glm::vec4(0.0f,100.0f,0.0f,1.0f);
             glm::vec4 camera_view_vector = camera_lookat_l - camera_position_c;
             glm::vec4 camera_up_vector   = glm::vec4(0.0f,1.0f,0.0f,0.0f);
             view = Matrix_Camera_View(camera_position_c, camera_view_vector, camera_up_vector);
@@ -353,9 +280,6 @@ int main() {
             glUniformMatrix4fv(view_uniform       , 1 , GL_FALSE , glm::value_ptr(view));
             glUniformMatrix4fv(projection_uniform , 1 , GL_FALSE , glm::value_ptr(projection));
         }
-
-        onUpdate(dt);
-        onRender();
 
         emitter.onUpdate(dt);
         emitter.onRender(renderer);
@@ -384,53 +308,6 @@ int main() {
 
     glfwTerminate();
     return 0;
-}
-
-void onUpdate(float dt) {
-    for (unsigned long int i = 0; i < particles.size(); i++) {
-        if (!particles[i].active) {
-            continue;
-        }
-        particles[i].life -= dt;
-        if (particles[i].life < 0.0f) {
-            particles[i].active = false;
-            continue;
-        }
-        particles[i].xs += dt*particles[i].xa/2;
-        particles[i].ys += dt*particles[i].ya/2;
-        particles[i].zs += dt*particles[i].za/2;
-        particles[i].x += dt*particles[i].xs;
-        particles[i].y += dt*particles[i].ys;
-        particles[i].z += dt*particles[i].zs;
-    }
-}
-
-void onRender() {
-    for (unsigned long int i = 0; i < particles.size(); i++) {
-        if (!particles[i].active) {
-            continue;
-        }
-        // Linear interpolation of lifetime
-        float l = 1.0f - (particles[i].life / particles[i].maxlife);
-        float s = ((1.0f-l) * particles[i].beginSize) + (l* particles[i].endSize);
-        // Compute transform matrix
-        glm::mat4 model = Matrix_Identity();
-        auto translate = Matrix_Translate(particles[i].x, particles[i].y, particles[i].z);
-        auto scale = Matrix_Scale(s, s, s);
-        model *= translate;
-        model *= scale;
-        // Send transform matrix to GPU
-        glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
-        // Draw object
-        glUniform1i(render_as_black_uniform, false);
-        glDrawElements(
-                g_VirtualScene["cube_faces"].rendering_mode,
-                g_VirtualScene["cube_faces"].num_indices,
-                GL_UNSIGNED_INT,
-                (void*)g_VirtualScene["cube_faces"].first_index
-                );
-
-    }
 }
 
 void DrawCube(GLint render_as_black_uniform) {
@@ -824,31 +701,60 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
     } else if (key == GLFW_KEY_F && action == GLFW_PRESS) {
         Particle::ParticleProprieties particle;
 
-        // Configurar o particleProprieties
-        particle.x = 0;
-        particle.y = 0;
-        particle.z = 0;
-        particle.xs = 0;
-        particle.ys = 0;
-        particle.zs = 0;
-        particle.xa = 0;
-        particle.ya = 0;
-        particle.za = 0;
-        particle.rotationX = 0;
-        particle.rotationY = 0;
-        particle.rotationZ = 0;
-        particle.rotationSpeedX = 0;
-        particle.rotationSpeedY = 0;
-        particle.rotationSpeedZ = 0;
-        particle.size = 1.0f;
-        particle.sizeChange = -1.0f;
-        particle.duration = 8.0f;
-
         // Carregar o objeto da particula (nesse caso o cubo)
         RenderObject ro((void*)g_VirtualScene["cube_faces"].first_index, g_VirtualScene["cube_faces"].num_indices,  g_VirtualScene["cube_faces"].rendering_mode);
         particle.object = ro;
 
+        float explosionDelay = 5.0f;
+        float explosionHeight = 200.0f;
+
         {
+            // Configurar o particleProprieties
+            particle.x = 0;
+            particle.y = 0;
+            particle.z = 0;
+            particle.xa = 0;
+            particle.ya = -1.0f;
+            particle.za = 0;
+            particle.xs = 0;
+            particle.ys = (explosionHeight / explosionDelay) - (particle.ya * explosionDelay / 2.0f);
+            particle.zs = 0;
+            particle.rotationX = 0;
+            particle.rotationY = 0;
+            particle.rotationZ = 0;
+            particle.rotationSpeedX = 0;
+            particle.rotationSpeedY = 0;
+            particle.rotationSpeedZ = 0;
+            particle.duration = explosionDelay;
+
+            for (float i = 0; i < 0.5f; i += 0.05) {
+                particle.size = 5.0f*((0.5f-i)/0.5f);
+                particle.sizeChange = -particle.size * 0.1;
+                emitter.emitIn(particle, i);
+            }
+        }
+
+        {
+            // Configurar o particleProprieties
+            particle.x = 0;
+            particle.y = 0;
+            particle.z = 0;
+            particle.xs = 0;
+            particle.ys = 0;
+            particle.zs = 0;
+            particle.xa = 0;
+            particle.ya = 0;
+            particle.za = 0;
+            particle.rotationX = 0;
+            particle.rotationY = 0;
+            particle.rotationZ = 0;
+            particle.rotationSpeedX = 0;
+            particle.rotationSpeedY = 0;
+            particle.rotationSpeedZ = 0;
+            particle.size = 1.0f;
+            particle.sizeChange = -1.0f;
+            particle.duration = 8.0f;
+
             float speed = 1.0f;
             float r = speed;
             for (float i = 0.0f; i < 2.0f*PI; i += (2.0f*PI)/SIDES) {
@@ -858,7 +764,7 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
                     float x = r*cos(i)*sin(j);
 
                     particle.x = 0;
-                    particle.y = 30.0f;
+                    particle.y = explosionHeight;
                     particle.z = 0;
                     particle.xs = x;
                     particle.ys = y;
@@ -891,7 +797,7 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
                     for (int k = 0; k < 20; k++) {
                         particle.size = (20.0-k)/20.0f;
                         particle.sizeChange = -particle.size;
-                        emitter.emitIn(particle, k/20.0f);
+                        emitter.emitIn(particle, explosionDelay+(k/20.0f));
                     }
                 }
             }
