@@ -31,8 +31,8 @@
 #include <vector>
 
 // Headers das bibliotecas OpenGL
-#include "glad/glad.h"   // Criação de contexto OpenGL 3.3
-#include "GLFW/glfw3.h"  // Criação de janelas do sistema operacional
+#include "glad/glad.h"  // Criação de contexto OpenGL 3.3
+#include "GLFW/glfw3.h" // Criação de janelas do sistema operacional
 
 // Headers da biblioteca GLM: criação de matrizes e vetores.
 #include "glm/mat4x4.hpp"
@@ -46,51 +46,54 @@
 
 #include "random.h"
 
+#include "world.h"
+
 // Declaração de várias funções utilizadas em main().  Essas estão definidas
 // logo após a definição de main() neste arquivo.
-void DrawCube(GLint render_as_black_uniform); // Desenha um cubo
-GLuint BuildTriangles(); // Constrói triângulos para renderização
-void LoadShadersFromFiles(); // Carrega os shaders de vértice e fragmento, criando um programa de GPU
-GLuint loadVertexShader(const char* filename);   // Carrega um vertex shader
-GLuint loadFragmentShader(const char* filename); // Carrega um fragment shader
-void LoadShader(const char* filename, GLuint shader_id); // Função utilizada pelas duas acima
+void DrawCube(GLint render_as_black_uniform);                                // Desenha um cubo
+GLuint BuildTriangles();                                                     // Constrói triângulos para renderização
+void LoadShadersFromFiles();                                                 // Carrega os shaders de vértice e fragmento, criando um programa de GPU
+GLuint loadVertexShader(const char *filename);                               // Carrega um vertex shader
+GLuint loadFragmentShader(const char *filename);                             // Carrega um fragment shader
+void LoadShader(const char *filename, GLuint shader_id);                     // Função utilizada pelas duas acima
 GLuint CreateGpuProgram(GLuint vertex_shader_id, GLuint fragment_shader_id); // Cria um programa de GPU
 
 // Declaração de funções auxiliares para renderizar texto dentro da janela
 // OpenGL. Estas funções estão definidas no arquivo "textrendering.cpp".
 void TextRendering_Init();
-float TextRendering_LineHeight(GLFWwindow* window);
-float TextRendering_CharWidth(GLFWwindow* window);
-void TextRendering_PrintString(GLFWwindow* window, const std::string &str, float x, float y, float scale = 1.0f);
-void TextRendering_PrintMatrix(GLFWwindow* window, glm::mat4 M, float x, float y, float scale = 1.0f);
-void TextRendering_PrintVector(GLFWwindow* window, glm::vec4 v, float x, float y, float scale = 1.0f);
-void TextRendering_PrintMatrixVectorProduct(GLFWwindow* window, glm::mat4 M, glm::vec4 v, float x, float y, float scale = 1.0f);
-void TextRendering_PrintMatrixVectorProductMoreDigits(GLFWwindow* window, glm::mat4 M, glm::vec4 v, float x, float y, float scale = 1.0f);
-void TextRendering_PrintMatrixVectorProductDivW(GLFWwindow* window, glm::mat4 M, glm::vec4 v, float x, float y, float scale = 1.0f);
+float TextRendering_LineHeight(GLFWwindow *window);
+float TextRendering_CharWidth(GLFWwindow *window);
+void TextRendering_PrintString(GLFWwindow *window, const std::string &str, float x, float y, float scale = 1.0f);
+void TextRendering_PrintMatrix(GLFWwindow *window, glm::mat4 M, float x, float y, float scale = 1.0f);
+void TextRendering_PrintVector(GLFWwindow *window, glm::vec4 v, float x, float y, float scale = 1.0f);
+void TextRendering_PrintMatrixVectorProduct(GLFWwindow *window, glm::mat4 M, glm::vec4 v, float x, float y, float scale = 1.0f);
+void TextRendering_PrintMatrixVectorProductMoreDigits(GLFWwindow *window, glm::mat4 M, glm::vec4 v, float x, float y, float scale = 1.0f);
+void TextRendering_PrintMatrixVectorProductDivW(GLFWwindow *window, glm::mat4 M, glm::vec4 v, float x, float y, float scale = 1.0f);
 
 // Funções abaixo renderizam como texto na janela OpenGL algumas matrizes e
 // outras informações do programa. Definidas após main().
-void TextRendering_ShowModelViewProjection(GLFWwindow* window, glm::mat4 projection, glm::mat4 view, glm::mat4 model, glm::vec4 p_model);
-void TextRendering_ShowEulerAngles(GLFWwindow* window);
-void TextRendering_ShowProjection(GLFWwindow* window);
-void TextRendering_ShowFramesPerSecond(GLFWwindow* window);
+void TextRendering_ShowModelViewProjection(GLFWwindow *window, glm::mat4 projection, glm::mat4 view, glm::mat4 model, glm::vec4 p_model);
+void TextRendering_ShowEulerAngles(GLFWwindow *window);
+void TextRendering_ShowProjection(GLFWwindow *window);
+void TextRendering_ShowFramesPerSecond(GLFWwindow *window);
 
 // Funções callback para comunicação com o sistema operacional e interação do
 // usuário. Veja mais comentários nas definições das mesmas, abaixo.
-void FramebufferSizeCallback(GLFWwindow* window, int width, int height);
-void ErrorCallback(int error, const char* description);
-void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mode);
-void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods);
-void CursorPosCallback(GLFWwindow* window, double xpos, double ypos);
-void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset);
+void FramebufferSizeCallback(GLFWwindow *window, int width, int height);
+void ErrorCallback(int error, const char *description);
+void KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mode);
+void MouseButtonCallback(GLFWwindow *window, int button, int action, int mods);
+void CursorPosCallback(GLFWwindow *window, double xpos, double ypos);
+void ScrollCallback(GLFWwindow *window, double xoffset, double yoffset);
 
 // Definimos uma estrutura que armazenará dados necessários para renderizar
 // cada objeto da cena virtual.
-struct SceneObject {
-    const char*  name;
-    void*        first_index;
-    int          num_indices;
-    GLenum       rendering_mode;
+struct SceneObject
+{
+    const char *name;
+    void *first_index;
+    int num_indices;
+    GLenum rendering_mode;
 };
 
 // Abaixo definimos variáveis globais utilizadas em várias funções do código.
@@ -99,10 +102,10 @@ struct SceneObject {
 // (map).  Veja dentro da função BuildTriangles() como que são incluídos
 // objetos dentro da variável g_VirtualScene, e veja na função main() como
 // estes são acessados.
-std::map<const char*, SceneObject> g_VirtualScene;
+std::map<const char *, SceneObject> g_VirtualScene;
 
 // Pilha que guardará as matrizes de modelagem.
-std::stack<glm::mat4>  g_MatrixStack;
+std::stack<glm::mat4> g_MatrixStack;
 
 // Razão de proporção da janela (largura/altura). Veja função FramebufferSizeCallback().
 float g_ScreenRatio = 1.0f;
@@ -116,8 +119,8 @@ float g_AngleZ = 0.0f;
 // usuário através do mouse (veja função CursorPosCallback()). A posição
 // efetiva da câmera é calculada dentro da função main(), dentro do loop de
 // renderização.
-float g_CameraTheta = 0.0f; // Ângulo no plano ZX em relação ao eixo Z
-float g_CameraPhi = 0.0f;   // Ângulo em relação ao eixo Y
+float g_CameraTheta = 0.0f;     // Ângulo no plano ZX em relação ao eixo Z
+float g_CameraPhi = 0.0f;       // Ângulo em relação ao eixo Y
 float g_CameraDistance = 50.0f; // Distância da câmera para a origem
 
 // Variáveis que controlam rotação do antebraço
@@ -137,7 +140,8 @@ bool g_ShowInfoText = true;
 // Variáveis que definem um programa de GPU (shaders). Veja função LoadShadersFromFiles().
 GLuint g_GpuProgramID = 0;
 
-GLFWwindow* setup() {
+GLFWwindow *setup()
+{
     int success = glfwInit();
     if (!success)
     {
@@ -156,7 +160,7 @@ GLFWwindow* setup() {
 
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    GLFWwindow* window;
+    GLFWwindow *window;
     window = glfwCreateWindow(800, 800, "INF01047 - 297033 - Rafael Lacerda Busatta", NULL, NULL);
     if (!window)
     {
@@ -177,21 +181,22 @@ GLFWwindow* setup() {
     return window;
 }
 
-void displaySystemInfo() {
-    gladLoadGLLoader((GLADloadproc) glfwGetProcAddress);
+void displaySystemInfo()
+{
+    gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
 
-    const GLubyte *vendor      = glGetString(GL_VENDOR);
-    const GLubyte *renderer    = glGetString(GL_RENDERER);
-    const GLubyte *glversion   = glGetString(GL_VERSION);
+    const GLubyte *vendor = glGetString(GL_VENDOR);
+    const GLubyte *renderer = glGetString(GL_RENDERER);
+    const GLubyte *glversion = glGetString(GL_VERSION);
     const GLubyte *glslversion = glGetString(GL_SHADING_LANGUAGE_VERSION);
 
     printf("GPU: %s, %s, OpenGL %s, GLSL %s\n", vendor, renderer, glversion, glslversion);
 }
 
-GLint model_uniform           ; // Variável da matriz "model"
-GLint view_uniform            ; // Variável da matriz "view" em shader_vertex.glsl
-GLint projection_uniform      ; // Variável da matriz "projection" em shader_vertex.glsl
-GLint render_as_black_uniform ; // Variável booleana em shader_vertex.glsl
+GLint model_uniform;           // Variável da matriz "model"
+GLint view_uniform;            // Variável da matriz "view" em shader_vertex.glsl
+GLint projection_uniform;      // Variável da matriz "projection" em shader_vertex.glsl
+GLint render_as_black_uniform; // Variável booleana em shader_vertex.glsl
 
 #include "particle.h"
 Particle::ParticleEmitter emitter(1000000);
@@ -200,21 +205,23 @@ Particle::ParticleEmitter emitter(1000000);
 #define SIDES 20.0
 #define VSIDES 10.0
 
-
-int main() {
+int main()
+{
     GLFWwindow *window = setup();
 
     displaySystemInfo();
 
     LoadShadersFromFiles();
 
+    World::loadModel();
+
     GLuint vertex_array_object_id = BuildTriangles();
 
     TextRendering_Init();
 
-    model_uniform           = glGetUniformLocation(g_GpuProgramID, "model"); // Variável da matriz "model"
-    view_uniform            = glGetUniformLocation(g_GpuProgramID, "view"); // Variável da matriz "view" em shader_vertex.glsl
-    projection_uniform      = glGetUniformLocation(g_GpuProgramID, "projection"); // Variável da matriz "projection" em shader_vertex.glsl
+    model_uniform = glGetUniformLocation(g_GpuProgramID, "model");                     // Variável da matriz "model"
+    view_uniform = glGetUniformLocation(g_GpuProgramID, "view");                       // Variável da matriz "view" em shader_vertex.glsl
+    projection_uniform = glGetUniformLocation(g_GpuProgramID, "projection");           // Variável da matriz "projection" em shader_vertex.glsl
     render_as_black_uniform = glGetUniformLocation(g_GpuProgramID, "render_as_black"); // Variável booleana em shader_vertex.glsl
 
     // Habilitamos o Z-buffer. Veja slides 104-116 do documento Aula_09_Projecoes.pdf.
@@ -236,7 +243,7 @@ int main() {
         double currentTime = glfwGetTime();
         float dt = currentTime - previousTime;
         previousTime = currentTime;
-        
+
         // Clear screen
         glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -253,37 +260,41 @@ int main() {
         glm::mat4 view;
         {
             float r = g_CameraDistance;
-            float y = r*sin(g_CameraPhi);
-            float z = r*cos(g_CameraPhi)*cos(g_CameraTheta);
-            float x = r*cos(g_CameraPhi)*sin(g_CameraTheta);
-            glm::vec4 camera_position_c  = glm::vec4(x,y,z,1.0f);
-            glm::vec4 camera_lookat_l    = glm::vec4(0.0f,100.0f,0.0f,1.0f);
+            float y = r * sin(g_CameraPhi);
+            float z = r * cos(g_CameraPhi) * cos(g_CameraTheta);
+            float x = r * cos(g_CameraPhi) * sin(g_CameraTheta);
+            glm::vec4 camera_position_c = glm::vec4(x, y, z, 1.0f);
+            glm::vec4 camera_lookat_l = glm::vec4(0.0f, 100.0f, 0.0f, 1.0f);
             glm::vec4 camera_view_vector = camera_lookat_l - camera_position_c;
-            glm::vec4 camera_up_vector   = glm::vec4(0.0f,1.0f,0.0f,0.0f);
+            glm::vec4 camera_up_vector = glm::vec4(0.0f, 1.0f, 0.0f, 0.0f);
             view = Matrix_Camera_View(camera_position_c, camera_view_vector, camera_up_vector);
         }
 
         glm::mat4 projection;
         {
             float nearplane = -0.1f;
-            float farplane  = -10000.0f;
-            if (g_UsePerspectiveProjection) {
+            float farplane = -10000.0f;
+            if (g_UsePerspectiveProjection)
+            {
                 float field_of_view = 3.141592 / 3.0f;
                 projection = Matrix_Perspective(field_of_view, g_ScreenRatio, nearplane, farplane);
-            } else {
-                float t = 1.5f*g_CameraDistance/2.5f;
+            }
+            else
+            {
+                float t = 1.5f * g_CameraDistance / 2.5f;
                 float b = -t;
-                float r = t*g_ScreenRatio;
+                float r = t * g_ScreenRatio;
                 float l = -r;
                 projection = Matrix_Orthographic(l, r, b, t, nearplane, farplane);
             }
-            glUniformMatrix4fv(view_uniform       , 1 , GL_FALSE , glm::value_ptr(view));
-            glUniformMatrix4fv(projection_uniform , 1 , GL_FALSE , glm::value_ptr(projection));
+            glUniformMatrix4fv(view_uniform, 1, GL_FALSE, glm::value_ptr(view));
+            glUniformMatrix4fv(projection_uniform, 1, GL_FALSE, glm::value_ptr(projection));
         }
 
+        World::drawModel();
         emitter.onUpdate(dt);
         emitter.onRender(renderer);
-        
+
         // Overlay text
         {
             glm::mat4 model = Matrix_Identity();
@@ -291,11 +302,10 @@ int main() {
             glLineWidth(10.0f);
             glUniform1i(render_as_black_uniform, false);
             glDrawElements(
-                    g_VirtualScene["axes"].rendering_mode,
-                    g_VirtualScene["axes"].num_indices,
-                    GL_UNSIGNED_INT,
-                    (void*)g_VirtualScene["axes"].first_index
-                    );
+                g_VirtualScene["axes"].rendering_mode,
+                g_VirtualScene["axes"].num_indices,
+                GL_UNSIGNED_INT,
+                (void *)g_VirtualScene["axes"].first_index);
             glBindVertexArray(0);
             TextRendering_ShowEulerAngles(window);
             TextRendering_ShowProjection(window);
@@ -310,64 +320,63 @@ int main() {
     return 0;
 }
 
-void DrawCube(GLint render_as_black_uniform) {
+void DrawCube(GLint render_as_black_uniform)
+{
     glUniform1i(render_as_black_uniform, false);
     // Cube
     {
         glDrawElements(
-                g_VirtualScene["cube_faces"].rendering_mode, // Veja slides 182-188 do documento Aula_04_Modelagem_Geometrica_3D.pdf
-                g_VirtualScene["cube_faces"].num_indices,    //
-                GL_UNSIGNED_INT,
-                (void*)g_VirtualScene["cube_faces"].first_index
-                );
+            g_VirtualScene["cube_faces"].rendering_mode, // Veja slides 182-188 do documento Aula_04_Modelagem_Geometrica_3D.pdf
+            g_VirtualScene["cube_faces"].num_indices,    //
+            GL_UNSIGNED_INT,
+            (void *)g_VirtualScene["cube_faces"].first_index);
     }
     return;
     // Axes
     {
         glLineWidth(4.0f);
         glDrawElements(
-                g_VirtualScene["axes"].rendering_mode,
-                g_VirtualScene["axes"].num_indices,
-                GL_UNSIGNED_INT,
-                (void*)g_VirtualScene["axes"].first_index
-                );
+            g_VirtualScene["axes"].rendering_mode,
+            g_VirtualScene["axes"].num_indices,
+            GL_UNSIGNED_INT,
+            (void *)g_VirtualScene["axes"].first_index);
     }
     // Edges
     {
         glUniform1i(render_as_black_uniform, true);
         glDrawElements(
-                g_VirtualScene["cube_edges"].rendering_mode,
-                g_VirtualScene["cube_edges"].num_indices,
-                GL_UNSIGNED_INT,
-                (void*)g_VirtualScene["cube_edges"].first_index
-                );
+            g_VirtualScene["cube_edges"].rendering_mode,
+            g_VirtualScene["cube_edges"].num_indices,
+            GL_UNSIGNED_INT,
+            (void *)g_VirtualScene["cube_edges"].first_index);
     }
 }
 
-GLuint BuildTriangles() {
+GLuint BuildTriangles()
+{
     GLfloat model_coefficients[] = {
         // Vértices de um cubo
         //    X      Y     Z     W
-        -0.5f,  0.0f,  0.5f, 1.0f, // posição do vértice 0
-        -0.5f, -1.0f,  0.5f, 1.0f, // posição do vértice 1
-        0.5f, -1.0f,  0.5f, 1.0f, // posição do vértice 2
-        0.5f,  0.0f,  0.5f, 1.0f, // posição do vértice 3
-        -0.5f,  0.0f, -0.5f, 1.0f, // posição do vértice 4
+        -0.5f, 0.0f, 0.5f, 1.0f,   // posição do vértice 0
+        -0.5f, -1.0f, 0.5f, 1.0f,  // posição do vértice 1
+        0.5f, -1.0f, 0.5f, 1.0f,   // posição do vértice 2
+        0.5f, 0.0f, 0.5f, 1.0f,    // posição do vértice 3
+        -0.5f, 0.0f, -0.5f, 1.0f,  // posição do vértice 4
         -0.5f, -1.0f, -0.5f, 1.0f, // posição do vértice 5
-        0.5f, -1.0f, -0.5f, 1.0f, // posição do vértice 6
-        0.5f,  0.0f, -0.5f, 1.0f, // posição do vértice 7
-                                  // Vértices para desenhar o eixo X
-                                  //    X      Y     Z     W
-        0.0f,  0.0f,  0.0f, 1.0f, // posição do vértice 8
-        1.0f,  0.0f,  0.0f, 1.0f, // posição do vértice 9
-                                  // Vértices para desenhar o eixo Y
-                                  //    X      Y     Z     W
-        0.0f,  0.0f,  0.0f, 1.0f, // posição do vértice 10
-        0.0f,  1.0f,  0.0f, 1.0f, // posição do vértice 11
-                                  // Vértices para desenhar o eixo Z
-                                  //    X      Y     Z     W
-        0.0f,  0.0f,  0.0f, 1.0f, // posição do vértice 12
-        0.0f,  0.0f,  1.0f, 1.0f, // posição do vértice 13
+        0.5f, -1.0f, -0.5f, 1.0f,  // posição do vértice 6
+        0.5f, 0.0f, -0.5f, 1.0f,   // posição do vértice 7
+                                   // Vértices para desenhar o eixo X
+                                   //    X      Y     Z     W
+        0.0f, 0.0f, 0.0f, 1.0f,    // posição do vértice 8
+        1.0f, 0.0f, 0.0f, 1.0f,    // posição do vértice 9
+                                   // Vértices para desenhar o eixo Y
+                                   //    X      Y     Z     W
+        0.0f, 0.0f, 0.0f, 1.0f,    // posição do vértice 10
+        0.0f, 1.0f, 0.0f, 1.0f,    // posição do vértice 11
+                                   // Vértices para desenhar o eixo Z
+                                   //    X      Y     Z     W
+        0.0f, 0.0f, 0.0f, 1.0f,    // posição do vértice 12
+        0.0f, 0.0f, 1.0f, 1.0f,    // posição do vértice 13
     };
     GLuint VBO_model_coefficients_id;
     glGenBuffers(1, &VBO_model_coefficients_id);
@@ -377,8 +386,8 @@ GLuint BuildTriangles() {
     glBindBuffer(GL_ARRAY_BUFFER, VBO_model_coefficients_id);
     glBufferData(GL_ARRAY_BUFFER, sizeof(model_coefficients), NULL, GL_STATIC_DRAW);
     glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(model_coefficients), model_coefficients);
-    GLuint location = 0; // "(location = 0)" em "shader_vertex.glsl"
-    GLint  number_of_dimensions = 4; // vec4 em "shader_vertex.glsl"
+    GLuint location = 0;            // "(location = 0)" em "shader_vertex.glsl"
+    GLint number_of_dimensions = 4; // vec4 em "shader_vertex.glsl"
     glVertexAttribPointer(location, number_of_dimensions, GL_FLOAT, GL_FALSE, 0, 0);
     glEnableVertexAttribArray(location);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -408,7 +417,7 @@ GLuint BuildTriangles() {
     glBindBuffer(GL_ARRAY_BUFFER, VBO_color_coefficients_id);
     glBufferData(GL_ARRAY_BUFFER, sizeof(color_coefficients), NULL, GL_STATIC_DRAW);
     glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(color_coefficients), color_coefficients);
-    location = 1; // "(location = 1)" em "shader_vertex.glsl"
+    location = 1;             // "(location = 1)" em "shader_vertex.glsl"
     number_of_dimensions = 4; // vec4 em "shader_vertex.glsl"
     glVertexAttribPointer(location, number_of_dimensions, GL_FLOAT, GL_FALSE, 0, 0);
     glEnableVertexAttribArray(location);
@@ -432,43 +441,43 @@ GLuint BuildTriangles() {
                  // Definimos os índices dos vértices que definem as ARESTAS de um cubo
                  // através de 12 linhas que serão desenhadas com o modo de renderização
                  // GL_LINES.
-        0, 1, // linha 1
-        1, 2, // linha 2
-        2, 3, // linha 3
-        3, 0, // linha 4
-        0, 4, // linha 5
-        4, 7, // linha 6
-        7, 6, // linha 7
-        6, 2, // linha 8
-        6, 5, // linha 9
-        5, 4, // linha 10
-        5, 1, // linha 11
-        7, 3, // linha 12
-              // Definimos os índices dos vértices que definem as linhas dos eixos X, Y,
-              // Z, que serão desenhados com o modo GL_LINES.
-        8 , 9 , // linha 1
-        10, 11, // linha 2
-        12, 13  // linha 3
+        0, 1,    // linha 1
+        1, 2,    // linha 2
+        2, 3,    // linha 3
+        3, 0,    // linha 4
+        0, 4,    // linha 5
+        4, 7,    // linha 6
+        7, 6,    // linha 7
+        6, 2,    // linha 8
+        6, 5,    // linha 9
+        5, 4,    // linha 10
+        5, 1,    // linha 11
+        7, 3,    // linha 12
+                 // Definimos os índices dos vértices que definem as linhas dos eixos X, Y,
+                 // Z, que serão desenhados com o modo GL_LINES.
+        8, 9,    // linha 1
+        10, 11,  // linha 2
+        12, 13   // linha 3
     };
     SceneObject cube_faces;
-    cube_faces.name           = "Cubo (faces coloridas)";
-    cube_faces.first_index    = (void*)0; // Primeiro índice está em indices[0]
-    cube_faces.num_indices    = 36;       // Último índice está em indices[35]; total de 36 índices.
+    cube_faces.name = "Cubo (faces coloridas)";
+    cube_faces.first_index = (void *)0;       // Primeiro índice está em indices[0]
+    cube_faces.num_indices = 36;              // Último índice está em indices[35]; total de 36 índices.
     cube_faces.rendering_mode = GL_TRIANGLES; // Índices correspondem ao tipo de rasterização GL_TRIANGLES.
     g_VirtualScene["cube_faces"] = cube_faces;
     SceneObject cube_edges;
-    cube_edges.name           = "Cubo (arestas pretas)";
-    cube_edges.first_index    = (void*)(36*sizeof(GLuint)); // Primeiro índice está em indices[36]
-    cube_edges.num_indices    = 24; // Último índice está em indices[59]; total de 24 índices.
-    cube_edges.rendering_mode = GL_LINES; // Índices correspondem ao tipo de rasterização GL_LINES.
+    cube_edges.name = "Cubo (arestas pretas)";
+    cube_edges.first_index = (void *)(36 * sizeof(GLuint)); // Primeiro índice está em indices[36]
+    cube_edges.num_indices = 24;                            // Último índice está em indices[59]; total de 24 índices.
+    cube_edges.rendering_mode = GL_LINES;                   // Índices correspondem ao tipo de rasterização GL_LINES.
     // Adicionamos o objeto criado acima na nossa cena virtual (g_VirtualScene).
     g_VirtualScene["cube_edges"] = cube_edges;
     // Criamos um terceiro objeto virtual (SceneObject) que se refere aos eixos XYZ.
     SceneObject axes;
-    axes.name           = "Eixos XYZ";
-    axes.first_index    = (void*)(60*sizeof(GLuint)); // Primeiro índice está em indices[60]
-    axes.num_indices    = 6; // Último índice está em indices[65]; total de 6 índices.
-    axes.rendering_mode = GL_LINES; // Índices correspondem ao tipo de rasterização GL_LINES.
+    axes.name = "Eixos XYZ";
+    axes.first_index = (void *)(60 * sizeof(GLuint)); // Primeiro índice está em indices[60]
+    axes.num_indices = 6;                             // Último índice está em indices[65]; total de 6 índices.
+    axes.rendering_mode = GL_LINES;                   // Índices correspondem ao tipo de rasterização GL_LINES.
     g_VirtualScene["axes"] = axes;
     // Criamos um buffer OpenGL para armazenar os índices acima
     GLuint indices_id;
@@ -493,33 +502,39 @@ GLuint BuildTriangles() {
     return vertex_array_object_id;
 }
 
-GLuint loadVertexShader(const char* filename) {
+GLuint loadVertexShader(const char *filename)
+{
     GLuint vertex_shader_id = glCreateShader(GL_VERTEX_SHADER);
     LoadShader(filename, vertex_shader_id);
     return vertex_shader_id;
 }
 
-GLuint loadFragmentShader(const char* filename) {
+GLuint loadFragmentShader(const char *filename)
+{
     GLuint fragment_shader_id = glCreateShader(GL_FRAGMENT_SHADER);
     LoadShader(filename, fragment_shader_id);
     return fragment_shader_id;
 }
 
-void LoadShader(const char* filename, GLuint shader_id) {
+void LoadShader(const char *filename, GLuint shader_id)
+{
     // Le o arquivo do shader
     std::ifstream file;
-    try {
+    try
+    {
         file.exceptions(std::ifstream::failbit);
         file.open(filename);
-    } catch ( std::exception& e ) {
+    }
+    catch (std::exception &e)
+    {
         fprintf(stderr, "ERROR: Cannot open file \"%s\".\n", filename);
         std::exit(EXIT_FAILURE);
     }
     std::stringstream shader;
     shader << file.rdbuf();
     std::string str = shader.str();
-    const GLchar* shader_string = str.c_str();
-    const GLint   shader_string_length = static_cast<GLint>( str.length() );
+    const GLchar *shader_string = str.c_str();
+    const GLint shader_string_length = static_cast<GLint>(str.length());
     // Compila o shader
     glShaderSource(shader_id, 1, &shader_string, &shader_string_length);
     glCompileShader(shader_id);
@@ -528,19 +543,23 @@ void LoadShader(const char* filename, GLuint shader_id) {
     glGetShaderiv(shader_id, GL_COMPILE_STATUS, &compiled_ok);
     GLint log_length = 0;
     glGetShaderiv(shader_id, GL_INFO_LOG_LENGTH, &log_length);
-    GLchar* log = new GLchar[log_length];
+    GLchar *log = new GLchar[log_length];
     glGetShaderInfoLog(shader_id, log_length, &log_length, log);
-    if ( log_length != 0 ) {
-        std::string  output;
+    if (log_length != 0)
+    {
+        std::string output;
         // Loca o erro
-        if ( !compiled_ok ) {
+        if (!compiled_ok)
+        {
             output += "ERROR: OpenGL compilation of \"";
             output += filename;
             output += "\" failed.\n";
             output += "== Start of compilation log\n";
             output += log;
             output += "== End of compilation log\n";
-        } else {
+        }
+        else
+        {
             output += "WARNING: OpenGL compilation of \"";
             output += filename;
             output += "\".\n";
@@ -550,18 +569,20 @@ void LoadShader(const char* filename, GLuint shader_id) {
         }
         fprintf(stderr, "%s", output.c_str());
     }
-    delete [] log;
+    delete[] log;
 }
 
-void LoadShadersFromFiles() {
+void LoadShadersFromFiles()
+{
     GLuint vertex_shader_id = loadVertexShader("../assets/shader_vertex.glsl");
     GLuint fragment_shader_id = loadFragmentShader("../assets/shader_fragment.glsl");
-    if ( g_GpuProgramID != 0 )
+    if (g_GpuProgramID != 0)
         glDeleteProgram(g_GpuProgramID);
     g_GpuProgramID = CreateGpuProgram(vertex_shader_id, fragment_shader_id);
 }
 
-GLuint CreateGpuProgram(GLuint vertex_shader_id, GLuint fragment_shader_id) {
+GLuint CreateGpuProgram(GLuint vertex_shader_id, GLuint fragment_shader_id)
+{
     // Create program
     GLuint program_id = glCreateProgram();
     // Link shaders
@@ -571,24 +592,26 @@ GLuint CreateGpuProgram(GLuint vertex_shader_id, GLuint fragment_shader_id) {
     // Check ok
     GLint linked_ok = GL_FALSE;
     glGetProgramiv(program_id, GL_LINK_STATUS, &linked_ok);
-    if (linked_ok == GL_FALSE) {
+    if (linked_ok == GL_FALSE)
+    {
         // Log error
         GLint log_length = 0;
         glGetProgramiv(program_id, GL_INFO_LOG_LENGTH, &log_length);
-        GLchar* log = new GLchar[log_length];
+        GLchar *log = new GLchar[log_length];
         glGetProgramInfoLog(program_id, log_length, &log_length, log);
         std::string output;
         output += "ERROR: OpenGL linking of program failed.\n";
         output += "== Start of link log\n";
         output += log;
         output += "\n== End of link log\n";
-        delete [] log;
+        delete[] log;
         fprintf(stderr, "%s", output.c_str());
     }
     return program_id;
 }
 
-void FramebufferSizeCallback(GLFWwindow* window, int width, int height) {
+void FramebufferSizeCallback(GLFWwindow *window, int width, int height)
+{
     glViewport(0, 0, width, height);
     g_ScreenRatio = (float)width / height;
 }
@@ -598,35 +621,49 @@ bool g_RightMouseButtonPressed = false;
 bool g_MiddleMouseButtonPressed = false;
 double g_LastCursorPosX, g_LastCursorPosY;
 
-void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
-    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
+void MouseButtonCallback(GLFWwindow *window, int button, int action, int mods)
+{
+    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
+    {
         glfwGetCursorPos(window, &g_LastCursorPosX, &g_LastCursorPosY);
         g_LeftMouseButtonPressed = true;
-    } else if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE) {
+    }
+    else if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE)
+    {
         g_LeftMouseButtonPressed = false;
-    } else if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS) {
+    }
+    else if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS)
+    {
         glfwGetCursorPos(window, &g_LastCursorPosX, &g_LastCursorPosY);
         g_RightMouseButtonPressed = true;
-    } else if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_RELEASE) {
+    }
+    else if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_RELEASE)
+    {
         g_RightMouseButtonPressed = false;
-    } else if (button == GLFW_MOUSE_BUTTON_MIDDLE && action == GLFW_PRESS) {
+    }
+    else if (button == GLFW_MOUSE_BUTTON_MIDDLE && action == GLFW_PRESS)
+    {
         glfwGetCursorPos(window, &g_LastCursorPosX, &g_LastCursorPosY);
         g_MiddleMouseButtonPressed = true;
-    } else if (button == GLFW_MOUSE_BUTTON_MIDDLE && action == GLFW_RELEASE) {
+    }
+    else if (button == GLFW_MOUSE_BUTTON_MIDDLE && action == GLFW_RELEASE)
+    {
         g_MiddleMouseButtonPressed = false;
     }
 }
 
-void CursorPosCallback(GLFWwindow* window, double xpos, double ypos) {
-    if (g_LeftMouseButtonPressed) {
+void CursorPosCallback(GLFWwindow *window, double xpos, double ypos)
+{
+    if (g_LeftMouseButtonPressed)
+    {
         // Deslocamento do cursor do mouse em x e y de coordenadas de tela!
         float dx = xpos - g_LastCursorPosX;
         float dy = ypos - g_LastCursorPosY;
         // Atualizamos parâmetros da câmera com os deslocamentos
-        g_CameraTheta -= 0.01f*dx;
-        g_CameraPhi   += 0.01f*dy;
+        g_CameraTheta -= 0.01f * dx;
+        g_CameraPhi += 0.01f * dy;
         // Em coordenadas esféricas, o ângulo phi deve ficar entre -pi/2 e +pi/2.
-        float phimax = 3.141592f/2;
+        float phimax = 3.141592f / 2;
         float phimin = -phimax;
         if (g_CameraPhi > phimax)
             g_CameraPhi = phimax;
@@ -637,25 +674,27 @@ void CursorPosCallback(GLFWwindow* window, double xpos, double ypos) {
         g_LastCursorPosX = xpos;
         g_LastCursorPosY = ypos;
     }
-    if (g_RightMouseButtonPressed) {
+    if (g_RightMouseButtonPressed)
+    {
         // Deslocamento do cursor do mouse em x e y de coordenadas de tela!
         float dx = xpos - g_LastCursorPosX;
         float dy = ypos - g_LastCursorPosY;
         // Atualizamos parâmetros da antebraço com os deslocamentos
-        g_ForearmAngleZ -= 0.01f*dx;
-        g_ForearmAngleX += 0.01f*dy;
+        g_ForearmAngleZ -= 0.01f * dx;
+        g_ForearmAngleX += 0.01f * dy;
         // Atualizamos as variáveis globais para armazenar a posição atual do
         // cursor como sendo a última posição conhecida do cursor.
         g_LastCursorPosX = xpos;
         g_LastCursorPosY = ypos;
     }
-    if (g_MiddleMouseButtonPressed) {
+    if (g_MiddleMouseButtonPressed)
+    {
         // Deslocamento do cursor do mouse em x e y de coordenadas de tela!
         float dx = xpos - g_LastCursorPosX;
         float dy = ypos - g_LastCursorPosY;
         // Atualizamos parâmetros da antebraço com os deslocamentos
-        g_TorsoPositionX += 0.01f*dx;
-        g_TorsoPositionY -= 0.01f*dy;
+        g_TorsoPositionX += 0.01f * dx;
+        g_TorsoPositionY -= 0.01f * dy;
         // Atualizamos as variáveis globais para armazenar a posição atual do
         // cursor como sendo a última posição conhecida do cursor.
         g_LastCursorPosX = xpos;
@@ -663,28 +702,38 @@ void CursorPosCallback(GLFWwindow* window, double xpos, double ypos) {
     }
 }
 
-void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset) {
-    g_CameraDistance -= 1.0f*yoffset;
+void ScrollCallback(GLFWwindow *window, double xoffset, double yoffset)
+{
+    g_CameraDistance -= 1.0f * yoffset;
     const float verysmallnumber = std::numeric_limits<float>::epsilon();
-    if (g_CameraDistance < verysmallnumber) {
+    if (g_CameraDistance < verysmallnumber)
+    {
         g_CameraDistance = verysmallnumber;
     }
 }
 
-void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod) {
+void KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mod)
+{
     for (int i = 0; i < 10; ++i)
         if (key == GLFW_KEY_0 + i && action == GLFW_PRESS && mod == GLFW_MOD_SHIFT)
             std::exit(100 + i);
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
         glfwSetWindowShouldClose(window, GL_TRUE);
     float delta = 3.141592 / 16; // 22.5 graus, em radianos.
-    if (key == GLFW_KEY_X && action == GLFW_PRESS) {
+    if (key == GLFW_KEY_X && action == GLFW_PRESS)
+    {
         g_AngleX += (mod & GLFW_MOD_SHIFT) ? -delta : delta;
-    } else if (key == GLFW_KEY_Y && action == GLFW_PRESS) {
+    }
+    else if (key == GLFW_KEY_Y && action == GLFW_PRESS)
+    {
         g_AngleY += (mod & GLFW_MOD_SHIFT) ? -delta : delta;
-    } else if (key == GLFW_KEY_Z && action == GLFW_PRESS) {
+    }
+    else if (key == GLFW_KEY_Z && action == GLFW_PRESS)
+    {
         g_AngleZ += (mod & GLFW_MOD_SHIFT) ? -delta : delta;
-    } else if (key == GLFW_KEY_SPACE && action == GLFW_PRESS) {
+    }
+    else if (key == GLFW_KEY_SPACE && action == GLFW_PRESS)
+    {
         g_AngleX = 0.0f;
         g_AngleY = 0.0f;
         g_AngleZ = 0.0f;
@@ -692,17 +741,25 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
         g_ForearmAngleZ = 0.0f;
         g_TorsoPositionX = 0.0f;
         g_TorsoPositionY = 0.0f;
-    } else if (key == GLFW_KEY_P && action == GLFW_PRESS) {
+    }
+    else if (key == GLFW_KEY_P && action == GLFW_PRESS)
+    {
         g_UsePerspectiveProjection = true;
-    } else if (key == GLFW_KEY_O && action == GLFW_PRESS) {
+    }
+    else if (key == GLFW_KEY_O && action == GLFW_PRESS)
+    {
         g_UsePerspectiveProjection = false;
-    } else if (key == GLFW_KEY_H && action == GLFW_PRESS) {
+    }
+    else if (key == GLFW_KEY_H && action == GLFW_PRESS)
+    {
         g_ShowInfoText = !g_ShowInfoText;
-    } else if (key == GLFW_KEY_F && action == GLFW_PRESS) {
+    }
+    else if (key == GLFW_KEY_F && action == GLFW_PRESS)
+    {
         Particle::ParticleProprieties particle;
 
         // Carregar o objeto da particula (nesse caso o cubo)
-        RenderObject ro((void*)g_VirtualScene["cube_faces"].first_index, g_VirtualScene["cube_faces"].num_indices,  g_VirtualScene["cube_faces"].rendering_mode);
+        RenderObject ro((void *)g_VirtualScene["cube_faces"].first_index, g_VirtualScene["cube_faces"].num_indices, g_VirtualScene["cube_faces"].rendering_mode);
         particle.object = ro;
 
         float explosionDelay = 5.0f;
@@ -727,8 +784,9 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
             particle.rotationSpeedZ = 0;
             particle.duration = explosionDelay;
 
-            for (float i = 0; i < 0.5f; i += 0.05) {
-                particle.size = 5.0f*((0.5f-i)/0.5f);
+            for (float i = 0; i < 0.5f; i += 0.05)
+            {
+                particle.size = 5.0f * ((0.5f - i) / 0.5f);
                 particle.sizeChange = -particle.size * 0.1;
                 emitter.emitIn(particle, i);
             }
@@ -757,11 +815,13 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
 
             float speed = 1.0f;
             float r = speed;
-            for (float i = 0.0f; i < 2.0f*PI; i += (2.0f*PI)/SIDES) {
-                for (float j = -PI / 2.0f; j < PI * 2.0f ; j += PI / VSIDES) {
-                    float y = r*sin(i);
-                    float z = r*cos(i)*cos(j);
-                    float x = r*cos(i)*sin(j);
+            for (float i = 0.0f; i < 2.0f * PI; i += (2.0f * PI) / SIDES)
+            {
+                for (float j = -PI / 2.0f; j < PI * 2.0f; j += PI / VSIDES)
+                {
+                    float y = r * sin(i);
+                    float z = r * cos(i) * cos(j);
+                    float x = r * cos(i) * sin(j);
 
                     particle.x = 0;
                     particle.y = explosionHeight;
@@ -794,83 +854,84 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
 
                     particle.duration = 6.0f + 0.5f * (Random::Float() * 2.0f - 1.0f);
 
-                    for (int k = 0; k < 20; k++) {
-                        particle.size = (20.0-k)/20.0f;
+                    for (int k = 0; k < 20; k++)
+                    {
+                        particle.size = (20.0 - k) / 20.0f;
                         particle.sizeChange = -particle.size;
-                        emitter.emitIn(particle, explosionDelay+(k/20.0f));
+                        emitter.emitIn(particle, explosionDelay + (k / 20.0f));
                     }
                 }
             }
         }
-
     }
 }
 
-void ErrorCallback(int error, const char* description) {
+void ErrorCallback(int error, const char *description)
+{
     fprintf(stderr, "ERROR: GLFW: %s\n", description);
 }
 
 void TextRendering_ShowModelViewProjection(
-        GLFWwindow* window,
-        glm::mat4 projection,
-        glm::mat4 view,
-        glm::mat4 model,
-        glm::vec4 p_model
-        ) {
-    if ( !g_ShowInfoText )
+    GLFWwindow *window,
+    glm::mat4 projection,
+    glm::mat4 view,
+    glm::mat4 model,
+    glm::vec4 p_model)
+{
+    if (!g_ShowInfoText)
         return;
 
-    glm::vec4 p_world = model*p_model;
-    glm::vec4 p_camera = view*p_world;
-    glm::vec4 p_clip = projection*p_camera;
+    glm::vec4 p_world = model * p_model;
+    glm::vec4 p_camera = view * p_world;
+    glm::vec4 p_clip = projection * p_camera;
     glm::vec4 p_ndc = p_clip / p_clip.w;
 
     float pad = TextRendering_LineHeight(window);
 
-    TextRendering_PrintString(window, " Model matrix             Model     In World Coords.", -1.0f, 1.0f-pad, 1.0f);
-    TextRendering_PrintMatrixVectorProduct(window, model, p_model, -1.0f, 1.0f-2*pad, 1.0f);
+    TextRendering_PrintString(window, " Model matrix             Model     In World Coords.", -1.0f, 1.0f - pad, 1.0f);
+    TextRendering_PrintMatrixVectorProduct(window, model, p_model, -1.0f, 1.0f - 2 * pad, 1.0f);
 
-    TextRendering_PrintString(window, "                                        |  ", -1.0f, 1.0f-6*pad, 1.0f);
-    TextRendering_PrintString(window, "                            .-----------'  ", -1.0f, 1.0f-7*pad, 1.0f);
-    TextRendering_PrintString(window, "                            V              ", -1.0f, 1.0f-8*pad, 1.0f);
+    TextRendering_PrintString(window, "                                        |  ", -1.0f, 1.0f - 6 * pad, 1.0f);
+    TextRendering_PrintString(window, "                            .-----------'  ", -1.0f, 1.0f - 7 * pad, 1.0f);
+    TextRendering_PrintString(window, "                            V              ", -1.0f, 1.0f - 8 * pad, 1.0f);
 
-    TextRendering_PrintString(window, " View matrix              World     In Camera Coords.", -1.0f, 1.0f-9*pad, 1.0f);
-    TextRendering_PrintMatrixVectorProduct(window, view, p_world, -1.0f, 1.0f-10*pad, 1.0f);
+    TextRendering_PrintString(window, " View matrix              World     In Camera Coords.", -1.0f, 1.0f - 9 * pad, 1.0f);
+    TextRendering_PrintMatrixVectorProduct(window, view, p_world, -1.0f, 1.0f - 10 * pad, 1.0f);
 
-    TextRendering_PrintString(window, "                                        |  ", -1.0f, 1.0f-14*pad, 1.0f);
-    TextRendering_PrintString(window, "                            .-----------'  ", -1.0f, 1.0f-15*pad, 1.0f);
-    TextRendering_PrintString(window, "                            V              ", -1.0f, 1.0f-16*pad, 1.0f);
+    TextRendering_PrintString(window, "                                        |  ", -1.0f, 1.0f - 14 * pad, 1.0f);
+    TextRendering_PrintString(window, "                            .-----------'  ", -1.0f, 1.0f - 15 * pad, 1.0f);
+    TextRendering_PrintString(window, "                            V              ", -1.0f, 1.0f - 16 * pad, 1.0f);
 
-    TextRendering_PrintString(window, " Projection matrix        Camera                    In NDC", -1.0f, 1.0f-17*pad, 1.0f);
-    TextRendering_PrintMatrixVectorProductDivW(window, projection, p_camera, -1.0f, 1.0f-18*pad, 1.0f);
+    TextRendering_PrintString(window, " Projection matrix        Camera                    In NDC", -1.0f, 1.0f - 17 * pad, 1.0f);
+    TextRendering_PrintMatrixVectorProductDivW(window, projection, p_camera, -1.0f, 1.0f - 18 * pad, 1.0f);
 
     int width, height;
     glfwGetFramebufferSize(window, &width, &height);
 
     glm::vec2 a = glm::vec2(-1, -1);
     glm::vec2 b = glm::vec2(+1, +1);
-    glm::vec2 p = glm::vec2( 0,  0);
+    glm::vec2 p = glm::vec2(0, 0);
     glm::vec2 q = glm::vec2(width, height);
 
     glm::mat4 viewport_mapping = Matrix(
-            (q.x - p.x)/(b.x-a.x), 0.0f, 0.0f, (b.x*p.x - a.x*q.x)/(b.x-a.x),
-            0.0f, (q.y - p.y)/(b.y-a.y), 0.0f, (b.y*p.y - a.y*q.y)/(b.y-a.y),
-            0.0f , 0.0f , 1.0f , 0.0f ,
-            0.0f , 0.0f , 0.0f , 1.0f
-            );
+        (q.x - p.x) / (b.x - a.x), 0.0f, 0.0f, (b.x * p.x - a.x * q.x) / (b.x - a.x),
+        0.0f, (q.y - p.y) / (b.y - a.y), 0.0f, (b.y * p.y - a.y * q.y) / (b.y - a.y),
+        0.0f, 0.0f, 1.0f, 0.0f,
+        0.0f, 0.0f, 0.0f, 1.0f);
 
-    TextRendering_PrintString(window, "                                                       |  ", -1.0f, 1.0f-22*pad, 1.0f);
-    TextRendering_PrintString(window, "                            .--------------------------'  ", -1.0f, 1.0f-23*pad, 1.0f);
-    TextRendering_PrintString(window, "                            V                           ", -1.0f, 1.0f-24*pad, 1.0f);
+    TextRendering_PrintString(window, "                                                       |  ", -1.0f, 1.0f - 22 * pad, 1.0f);
+    TextRendering_PrintString(window, "                            .--------------------------'  ", -1.0f, 1.0f - 23 * pad, 1.0f);
+    TextRendering_PrintString(window, "                            V                           ", -1.0f, 1.0f - 24 * pad, 1.0f);
 
-    TextRendering_PrintString(window, " Viewport matrix           NDC      In Pixel Coords.", -1.0f, 1.0f-25*pad, 1.0f);
-    TextRendering_PrintMatrixVectorProductMoreDigits(window, viewport_mapping, p_ndc, -1.0f, 1.0f-26*pad, 1.0f);
+    TextRendering_PrintString(window, " Viewport matrix           NDC      In Pixel Coords.", -1.0f, 1.0f - 25 * pad, 1.0f);
+    TextRendering_PrintMatrixVectorProductMoreDigits(window, viewport_mapping, p_ndc, -1.0f, 1.0f - 26 * pad, 1.0f);
 }
 
 // Escrevemos na tela os ângulos de Euler definidos nas variáveis globais
 // g_AngleX, g_AngleY, e g_AngleZ.
-void TextRendering_ShowEulerAngles(GLFWwindow* window) {
-    if ( !g_ShowInfoText )
+void TextRendering_ShowEulerAngles(GLFWwindow *window)
+{
+    if (!g_ShowInfoText)
         return;
 
     float pad = TextRendering_LineHeight(window);
@@ -878,37 +939,37 @@ void TextRendering_ShowEulerAngles(GLFWwindow* window) {
     char buffer[80];
     snprintf(buffer, 80, "Euler Angles rotation matrix = Z(%.2f)*Y(%.2f)*X(%.2f)\n", g_AngleZ, g_AngleY, g_AngleX);
 
-    TextRendering_PrintString(window, buffer, -1.0f+pad/10, -1.0f+2*pad/10, 1.0f);
+    TextRendering_PrintString(window, buffer, -1.0f + pad / 10, -1.0f + 2 * pad / 10, 1.0f);
 }
 
 // Escrevemos na tela qual matriz de projeção está sendo utilizada.
-void TextRendering_ShowProjection(GLFWwindow* window)
+void TextRendering_ShowProjection(GLFWwindow *window)
 {
-    if ( !g_ShowInfoText )
+    if (!g_ShowInfoText)
         return;
 
     float lineheight = TextRendering_LineHeight(window);
     float charwidth = TextRendering_CharWidth(window);
 
-    if ( g_UsePerspectiveProjection )
-        TextRendering_PrintString(window, "Perspective", 1.0f-13*charwidth, -1.0f+2*lineheight/10, 1.0f);
+    if (g_UsePerspectiveProjection)
+        TextRendering_PrintString(window, "Perspective", 1.0f - 13 * charwidth, -1.0f + 2 * lineheight / 10, 1.0f);
     else
-        TextRendering_PrintString(window, "Orthographic", 1.0f-13*charwidth, -1.0f+2*lineheight/10, 1.0f);
+        TextRendering_PrintString(window, "Orthographic", 1.0f - 13 * charwidth, -1.0f + 2 * lineheight / 10, 1.0f);
 }
 
 // Escrevemos na tela o número de quadros renderizados por segundo (frames per
 // second).
-void TextRendering_ShowFramesPerSecond(GLFWwindow* window)
+void TextRendering_ShowFramesPerSecond(GLFWwindow *window)
 {
-    if ( !g_ShowInfoText )
+    if (!g_ShowInfoText)
         return;
 
     // Variáveis estáticas (static) mantém seus valores entre chamadas
     // subsequentes da função!
     static float old_seconds = (float)glfwGetTime();
-    static int   ellapsed_frames = 0;
-    static char  buffer[20] = "?? fps";
-    static int   numchars = 7;
+    static int ellapsed_frames = 0;
+    static char buffer[20] = "?? fps";
+    static int numchars = 7;
 
     ellapsed_frames += 1;
 
@@ -918,7 +979,7 @@ void TextRendering_ShowFramesPerSecond(GLFWwindow* window)
     // Número de segundos desde o último cálculo do fps
     float ellapsed_seconds = seconds - old_seconds;
 
-    if ( ellapsed_seconds > 1.0f )
+    if (ellapsed_seconds > 1.0f)
     {
         numchars = snprintf(buffer, 20, "%.2f fps", ellapsed_frames / ellapsed_seconds);
 
@@ -929,9 +990,8 @@ void TextRendering_ShowFramesPerSecond(GLFWwindow* window)
     float lineheight = TextRendering_LineHeight(window);
     float charwidth = TextRendering_CharWidth(window);
 
-    TextRendering_PrintString(window, buffer, 1.0f-(numchars + 1)*charwidth, 1.0f-lineheight, 1.0f);
+    TextRendering_PrintString(window, buffer, 1.0f - (numchars + 1) * charwidth, 1.0f - lineheight, 1.0f);
 }
 
 // set makeprg=cd\ ..\ &&\ make\ run\ >/dev/null
 // vim: set spell spelllang=pt_br :
-
