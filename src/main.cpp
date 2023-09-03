@@ -1,3 +1,20 @@
+//     Universidade Federal do Rio Grande do Sul
+//             Instituto de Informática
+//       Departamento de Informática Aplicada
+//
+//    INF01047 Fundamentos de Computação Gráfica
+//               Prof. Eduardo Gastal
+//
+//                   PROJETO FINAL
+//
+
+// Arquivos "headers" padrões de C podem ser incluídos em um
+// programa C++, sendo necessário somente adicionar o caractere
+// "c" antes de seu nome, e remover o sufixo ".h". Exemplo:
+//    #include <stdio.h> // Em C
+//  vira
+//    #include <cstdio> // Em C++
+//
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -21,7 +38,7 @@
 #include "glm/mat4x4.hpp"
 #include "glm/vec4.hpp"
 #include "glm/gtc/type_ptr.hpp"
-
+#include "tiny_obj_loader.h"
 // Headers locais, definidos na pasta "include/"
 #include "renderer.h"
 #include "utils.h"
@@ -382,7 +399,6 @@ GLFWwindow *setup()
             glfwSwapBuffers(window);
             glfwPollEvents();
         }
-
         glfwTerminate();
         return 0;
     }
