@@ -33,6 +33,8 @@
 
 namespace World
 {
+  // Definimos uma estrutura que armazenará dados necessários para renderizar
+  // cada objeto da cena virtual.
   struct SceneObject
   {
     std::string name;              // Nome do objeto
@@ -100,10 +102,15 @@ namespace World
     }
   };
 
+  // A cena virtual é uma lista de objetos nomeados, guardados em um dicionário
+  // (map).  Veja dentro da função BuildTrianglesAndAddToVirtualScene() como que são incluídos
+  // objetos dentro da variável g_VirtualScene, e veja na função main() como
+  // estes são acessados.
   std::map<std::string, SceneObject> g_VirtualScene;
   void BuildTrianglesAndAddToVirtualScene(ObjModel *); // Constrói representação de um ObjModel como malha de triângulos para renderização
   void ComputeNormals(ObjModel *model);                // Computa normais de um ObjModel, caso não existam.
   void PrintObjModelInfo(ObjModel *);                  // Função para debugging
   void loadModel();
-  void drawModel();
+  void drawModel(glm::mat4 model, int modelMap);
+  void DrawVirtualObject(const char *object_name); // Desenha um objeto da cena virtual
 }

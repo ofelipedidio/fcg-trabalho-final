@@ -12,16 +12,16 @@ namespace World
   void drawModel(glm::mat4 model, int modelMap)
   {
     const int MODEL = modelMap;
-    glm::mat4 model;
-    float g_AngleX = 0.0f;
-    float g_AngleY = 0.0f;
-    float g_AngleZ = 0.0f;
+    // glm::mat4 model;
+    // float g_AngleX = 0.0f;
+    // float g_AngleY = 0.0f;
+    // float g_AngleZ = 0.0f;
     GLint g_object_id_uniform;
     GLint g_model_uniform;
-    model = Matrix_Translate(1.0f, 0.0f, 0.0f) * Matrix_Rotate_Z(g_AngleZ) * Matrix_Rotate_Y(g_AngleY) * Matrix_Rotate_X(g_AngleX);
+    model = Matrix_Translate(-1.0f, 0.0f, 0.0f); // * Matrix_Rotate_Z(g_AngleZ) * Matrix_Rotate_Y(g_AngleY) * Matrix_Rotate_X(g_AngleX)
     glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model));
     glUniform1i(g_object_id_uniform, MODEL);
-    DrawVirtualObject("the_bunny");
+    DrawVirtualObject("the_sphere");
   }
 
   // Função que computa as normais de um ObjModel, caso elas não tenham sido
@@ -65,7 +65,9 @@ namespace World
 
         // PREENCHA AQUI o cálculo da normal de um triângulo cujos vértices
         // estão nos pontos "a", "b", e "c", definidos no sentido anti-horário.
-        const glm::vec4 n = glm::vec4(0.0f, 0.0f, 0.0f, 0.0f);
+        const glm::vec4 u = a - c;
+        const glm::vec4 v = b - c;
+        const glm::vec4 n = crossproduct(u, v);
 
         for (size_t vertex = 0; vertex < 3; ++vertex)
         {
@@ -399,5 +401,30 @@ namespace World
       }
       printf("\n");
     }
+  }
+
+  // Função que desenha um objeto armazenado em g_VirtualScene. Veja definição
+  // dos objetos na função BuildTrianglesAndAddToVirtualScene().
+  void DrawVirtualObject(const char *object_name)
+  {
+    // "Ligamos" o VAO. Informamos que queremos utilizar os atributos de
+    // vértices apontados pelo VAO criado pela função BuildTrianglesAndAddToVirtualScene(). Veja
+    // comentários detalhados dentro da definição de BuildTrianglesAndAddToVirtualScene().
+    glBindVertexArray(g_VirtualScene[object_name].vertex_array_object_id);
+
+    // Pedimos para a GPU rasterizar os vértices dos eixos XYZ
+    // apontados pelo VAO como linhas. Veja a definição de
+    // g_VirtualScene[""] dentro da função BuildTrianglesAndAddToVirtualScene(), e veja
+    // a documentação da função glDrawElements() em
+    // http://docs.gl/gl3/glDrawElements.
+    glDrawElements(
+        g_VirtualScene[object_name].rendering_mode,
+        g_VirtualScene[object_name].num_indices,
+        GL_UNSIGNED_INT,
+        (void *)(g_VirtualScene[object_name].first_index * sizeof(GLuint)));
+
+    // "Desligamos" o VAO, evitando assim que operações posteriores venham a
+    // alterar o mesmo. Isso evita bugs.
+    glBindVertexArray(0);
   }
 }

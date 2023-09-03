@@ -5,7 +5,7 @@
 //    INF01047 Fundamentos de Computação Gráfica
 //               Prof. Eduardo Gastal
 //
-//                   LABORATÓRIO 3
+//                   PROJETO FINAL
 //
 
 // Arquivos "headers" padrões de C podem ser incluídos em um
@@ -235,8 +235,8 @@ int main()
     float previousTime = glfwGetTime();
     Random::Init();
 
-    float aaa;
-    int spawnCount = 0;
+    // float aaa;
+    // int spawnCount = 0;
     while (!glfwWindowShouldClose(window))
     {
 
@@ -291,7 +291,12 @@ int main()
             glUniformMatrix4fv(projection_uniform, 1, GL_FALSE, glm::value_ptr(projection));
         }
 
-        World::drawModel();
+#define SPHERE 0
+#define BUNNY 1
+#define PLANE 2
+        glm::mat4 modelObj = Matrix_Identity();
+
+        World::drawModel(modelObj, SPHERE);
         emitter.onUpdate(dt);
         emitter.onRender(renderer);
 
