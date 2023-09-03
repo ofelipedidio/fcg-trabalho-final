@@ -1,8 +1,5 @@
 #pragma once
 
-#ifndef _MATRICES_H
-#define _MATRICES_H
-
 #include <cstdio>
 #include <cstdlib>
 
@@ -34,4 +31,3 @@ void PrintMatrix(glm::mat4 M);
 void PrintVector(glm::vec4 v);
 void PrintMatrixVectorProduct(glm::mat4 M, glm::vec4 v);
 void PrintMatrixVectorProductDivW(glm::mat4 M, glm::vec4 v);
-#endif // _MATRICES_H

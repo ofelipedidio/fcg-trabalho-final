@@ -1,7 +1,5 @@
 #pragma once
 
-#ifndef OBJECT
-#define OBJECT
 #include <GLFW/glfw3.h>
 
 struct RenderObject {
@@ -20,5 +18,3 @@ struct RenderObject {
         glDrawElements(this->renderingMode, this->vertexCount, GL_UNSIGNED_INT, this->vertexes);
     }
 };
-
-#endif // OBJECT

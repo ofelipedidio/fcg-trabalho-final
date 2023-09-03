@@ -1,8 +1,5 @@
 #pragma once
 
-#ifndef RENDERER
-#define RENDERER
-
 #include "glad/glad.h"
 #include "GLFW/glfw3.h"
 
@@ -17,5 +14,3 @@ struct Renderer {
         this->projection = glGetUniformLocation(gpuProgram, "projection");
     }
 };
-
-#endif // RENDERER

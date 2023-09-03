@@ -1,20 +1,3 @@
-//     Universidade Federal do Rio Grande do Sul
-//             Instituto de Informática
-//       Departamento de Informática Aplicada
-//
-//    INF01047 Fundamentos de Computação Gráfica
-//               Prof. Eduardo Gastal
-//
-//                   LABORATÓRIO 3
-//
-
-// Arquivos "headers" padrões de C podem ser incluídos em um
-// programa C++, sendo necessário somente adicionar o caractere
-// "c" antes de seu nome, e remover o sufixo ".h". Exemplo:
-//    #include <stdio.h> // Em C
-//  vira
-//    #include <cstdio> // Em C++
-//
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -46,6 +29,19 @@
 
 #include "random.h"
 
+#include "collisions.h"
+#include "emitter.h"
+
+#define print_vec4(v) "(" << v.x << ", " << v.y << ", " << v.z << ", " << v.w << ")"
+#define debug_var(var) std::cout << #var " = " << var << std::endl;
+
+
+GLint model_uniform           ; // Variável da matriz "model"
+GLint view_uniform            ; // Variável da matriz "view" em shader_vertex.glsl
+GLint projection_uniform      ; // Variável da matriz "projection" em shader_vertex.glsl
+GLint render_as_black_uniform ; // Variável booleana em shader_vertex.glsl
+
+
 // Declaração de várias funções utilizadas em main().  Essas estão definidas
 // logo após a definição de main() neste arquivo.
 void DrawCube(GLint render_as_black_uniform); // Desenha um cubo
@@ -62,16 +58,10 @@ void TextRendering_Init();
 float TextRendering_LineHeight(GLFWwindow* window);
 float TextRendering_CharWidth(GLFWwindow* window);
 void TextRendering_PrintString(GLFWwindow* window, const std::string &str, float x, float y, float scale = 1.0f);
-void TextRendering_PrintMatrix(GLFWwindow* window, glm::mat4 M, float x, float y, float scale = 1.0f);
-void TextRendering_PrintVector(GLFWwindow* window, glm::vec4 v, float x, float y, float scale = 1.0f);
-void TextRendering_PrintMatrixVectorProduct(GLFWwindow* window, glm::mat4 M, glm::vec4 v, float x, float y, float scale = 1.0f);
-void TextRendering_PrintMatrixVectorProductMoreDigits(GLFWwindow* window, glm::mat4 M, glm::vec4 v, float x, float y, float scale = 1.0f);
-void TextRendering_PrintMatrixVectorProductDivW(GLFWwindow* window, glm::mat4 M, glm::vec4 v, float x, float y, float scale = 1.0f);
 
 // Funções abaixo renderizam como texto na janela OpenGL algumas matrizes e
 // outras informações do programa. Definidas após main().
 void TextRendering_ShowModelViewProjection(GLFWwindow* window, glm::mat4 projection, glm::mat4 view, glm::mat4 model, glm::vec4 p_model);
-void TextRendering_ShowEulerAngles(GLFWwindow* window);
 void TextRendering_ShowProjection(GLFWwindow* window);
 void TextRendering_ShowFramesPerSecond(GLFWwindow* window);
 
@@ -101,35 +91,66 @@ struct SceneObject {
 // estes são acessados.
 std::map<const char*, SceneObject> g_VirtualScene;
 
-// Pilha que guardará as matrizes de modelagem.
-std::stack<glm::mat4>  g_MatrixStack;
+struct Camera {
+    bool usePerspectiveProjection = true;
 
-// Razão de proporção da janela (largura/altura). Veja função FramebufferSizeCallback().
-float g_ScreenRatio = 1.0f;
+    // Perspective parameters
+    float theta = 0.0f;
+    float phi = 0.0f;
+    float distance = 50.0f;
+    float field_of_view = 3.141592 / 3.0f;
 
-// Ângulos de Euler que controlam a rotação de um dos cubos da cena virtual
-float g_AngleX = 0.0f;
-float g_AngleY = 0.0f;
-float g_AngleZ = 0.0f;
+    // General parameters
+    float nearPlane = -0.1f;
+    float farPlane = -100000.0f;
+    float screenRatio = 1.0f;
 
-// Variáveis que definem a câmera em coordenadas esféricas, controladas pelo
-// usuário através do mouse (veja função CursorPosCallback()). A posição
-// efetiva da câmera é calculada dentro da função main(), dentro do loop de
-// renderização.
-float g_CameraTheta = 0.0f; // Ângulo no plano ZX em relação ao eixo Z
-float g_CameraPhi = 0.0f;   // Ângulo em relação ao eixo Y
-float g_CameraDistance = 50.0f; // Distância da câmera para a origem
+    float width = 800.0f;
+    float height = 800.0f;
 
-// Variáveis que controlam rotação do antebraço
-float g_ForearmAngleZ = 0.0f;
-float g_ForearmAngleX = 0.0f;
+    bool isFreeCamera = false;
+    glm::vec4 position = glm::vec4(0,0,0,1);
+    glm::vec4 upVector = glm::vec4(0, 1, 0, 0);
 
-// Variáveis que controlam translação do torso
-float g_TorsoPositionX = 0.0f;
-float g_TorsoPositionY = 0.0f;
+    glm::vec4 viewVector = glm::vec4(0, 0, 1, 0);
+    glm::vec4 rightVector = glm::vec4(1, 0, 0, 0);
+    glm::vec4 topVector = glm::vec4(0, 1, 0, 0);
 
-// Variável que controla o tipo de projeção utilizada: perspectiva ou ortográfica.
-bool g_UsePerspectiveProjection = true;
+    void computeMatrices(glm::mat4 &view, glm::mat4 &projection) {
+        // View
+        {
+            if (!isFreeCamera) {
+                float r = distance;
+                float y = r * std::sin(phi);
+                float z = r * std::cos(phi) * std::cos(theta);
+                float x = r * std::cos(phi) * std::sin(theta);
+                position = glm::vec4(x, y, z, 1.0f);
+                glm::vec4 lookAtPoint = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+                viewVector = lookAtPoint - position;
+                view = Matrix_Camera_View(position, viewVector, upVector);
+                glUniformMatrix4fv(view_uniform, 1, GL_FALSE, glm::value_ptr(view));
+            }
+            view = Matrix_Camera_View(position, viewVector, upVector);
+            glUniformMatrix4fv(view_uniform, 1, GL_FALSE, glm::value_ptr(view));
+        }
+
+        // Projection
+        {
+            if (usePerspectiveProjection) {
+                projection = Matrix_Perspective(field_of_view, screenRatio, nearPlane, farPlane);
+            } else {
+                float t = 1.5f*distance/2.5f;
+                float b = -t;
+                float r = t*screenRatio;
+                float l = -r;
+                projection = Matrix_Orthographic(l, r, b, t, nearPlane, farPlane);
+            }
+            glUniformMatrix4fv(projection_uniform , 1 , GL_FALSE , glm::value_ptr(projection));
+        }
+    }
+};
+
+Camera camera;
 
 // Variável que controla se o texto informativo será mostrado na tela.
 bool g_ShowInfoText = true;
@@ -188,54 +209,23 @@ void displaySystemInfo() {
     printf("GPU: %s, %s, OpenGL %s, GLSL %s\n", vendor, renderer, glversion, glslversion);
 }
 
-void onUpdate(float dt);
-void onRender();
-
-GLint model_uniform           ; // Variável da matriz "model"
-GLint view_uniform            ; // Variável da matriz "view" em shader_vertex.glsl
-GLint projection_uniform      ; // Variável da matriz "projection" em shader_vertex.glsl
-GLint render_as_black_uniform ; // Variável booleana em shader_vertex.glsl
-
-typedef struct ParticleS {
-    bool active = false;
-    float x, y, z;
-    float xs, ys, zs;
-    float xa, ya, za;
-    float beginSize, endSize;
-    float life, maxlife;
-} ParticleS;
-
-std::vector<ParticleS> particles(1000000);
-int particleIndex = 0;
-
-void emit(ParticleS particle) {
-    particles[particleIndex].x = particle.x;
-    particles[particleIndex].y = particle.y;
-    particles[particleIndex].z = particle.z;
-    particles[particleIndex].xs = particle.xs;
-    particles[particleIndex].ys = particle.ys;
-    particles[particleIndex].zs = particle.zs;
-    particles[particleIndex].xa = particle.xa;
-    particles[particleIndex].ya = particle.ya;
-    particles[particleIndex].za = particle.za;
-    particles[particleIndex].beginSize = particle.beginSize;
-    particles[particleIndex].endSize = particle.endSize;
-    particles[particleIndex].life = particle.life;
-    particles[particleIndex].maxlife = particle.life;
-    particles[particleIndex].active = true;
-
-    particleIndex = (particleIndex+1) % particles.size();
-    // std::cout << particleIndex << std::endl;
-}
-
 #include "particle.h"
 Particle::ParticleEmitter emitter(10000);
 
+#include "emitter.h"
+Emitter::ParticleEmitter *e1;
+
 int main() {
+    camera.usePerspectiveProjection = true;
+    camera.phi = 0.0f;
+    camera.theta = 0.0f;
+    camera.distance = 50.0f;
+    camera.field_of_view = 3.141592f / 3.0f;
+    camera.nearPlane = -0.1f;
+    camera.farPlane = -100000.0f;
+
     GLFWwindow *window = setup();
-
     displaySystemInfo();
-
     LoadShadersFromFiles();
 
     GLuint vertex_array_object_id = BuildTriangles();
@@ -258,57 +248,29 @@ int main() {
     float previousTime = glfwGetTime();
     Random::Init();
 
-#define PI 3.14159265359
-#define SIDES 20.0
-#define VSIDES 10.0
+    Emitter::ParticleProprieties emitterProprieties;
+    emitterProprieties.xa = 0.0f;
+    emitterProprieties.ya = -9.8f;
+    emitterProprieties.za = 0.0f;
+    emitterProprieties.rotationSpeedX = 10.0f;
+    emitterProprieties.rotationSpeedY = 10.0f;
+    emitterProprieties.rotationSpeedZ = 1.0f;
+    emitterProprieties.initialSize = 1.0f;
+    emitterProprieties.finalSize = 0.0f;
+    emitterProprieties.duration = 4.0f;
+    RenderObject ro((void*)g_VirtualScene["cube_faces"].first_index, g_VirtualScene["cube_faces"].num_indices,  g_VirtualScene["cube_faces"].rendering_mode);
+    emitterProprieties.object = ro;
 
-    float aaa;
-    int spawnCount = 0;
+    Emitter::ParticleEmitter pa(10000, emitterProprieties);
+    e1 = &pa;
+
     while (!glfwWindowShouldClose(window))
     {
+        e1->emit(0, 0, 0, 10, 0, 0);
 
         double currentTime = glfwGetTime();
         float dt = currentTime - previousTime;
         previousTime = currentTime;
-
-        aaa += dt;
-
-#define EMIT_INTERVAL 0.05f
-
-        /*
-        while (aaa >= EMIT_INTERVAL && spawnCount < 20) {
-            spawnCount++;
-            aaa -= EMIT_INTERVAL;
-            float speed = 1.0f;
-            float r = speed;
-            for (float i = 0.0f; i < 2.0f*PI; i += (2.0f*PI)/SIDES) {
-                for (float j = -PI / 2.0f; j < PI * 2.0f ; j += PI / VSIDES) {
-                    float y = r*sin(i);
-                    float z = r*cos(i)*cos(j);
-                    float x = r*cos(i)*sin(j);
-
-                    particle.x = 0;
-                    particle.y = 0;
-                    particle.z = 0;
-                    particle.xs = x;
-                    particle.ys = y;
-                    particle.zs = z;
-
-                    particle.xa = -x * 0.01;
-                    particle.ya = -y * 0.01;
-                    particle.za = -z * 0.01;
-
-                    particle.ys += 1.0f;
-                    particle.ya -= 1.0f;
-
-                    particle.beginSize = ((float)(20-spawnCount+1)) * 1.0f / 20.0f;
-                    particle.endSize = 0.0f;
-
-                    emit(particle);
-                }
-            }
-        }
-        */
 
         // Clear screen
         glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
@@ -324,41 +286,16 @@ int main() {
         Renderer renderer(g_GpuProgramID);
 
         glm::mat4 view;
-        {
-            float r = g_CameraDistance;
-            float y = r*sin(g_CameraPhi);
-            float z = r*cos(g_CameraPhi)*cos(g_CameraTheta);
-            float x = r*cos(g_CameraPhi)*sin(g_CameraTheta);
-            glm::vec4 camera_position_c  = glm::vec4(x,y,z,1.0f);
-            glm::vec4 camera_lookat_l    = glm::vec4(0.0f,0.0f,0.0f,1.0f);
-            glm::vec4 camera_view_vector = camera_lookat_l - camera_position_c;
-            glm::vec4 camera_up_vector   = glm::vec4(0.0f,1.0f,0.0f,0.0f);
-            view = Matrix_Camera_View(camera_position_c, camera_view_vector, camera_up_vector);
-        }
-
         glm::mat4 projection;
-        {
-            float nearplane = -0.1f;
-            float farplane  = -10000.0f;
-            if (g_UsePerspectiveProjection) {
-                float field_of_view = 3.141592 / 3.0f;
-                projection = Matrix_Perspective(field_of_view, g_ScreenRatio, nearplane, farplane);
-            } else {
-                float t = 1.5f*g_CameraDistance/2.5f;
-                float b = -t;
-                float r = t*g_ScreenRatio;
-                float l = -r;
-                projection = Matrix_Orthographic(l, r, b, t, nearplane, farplane);
-            }
-            glUniformMatrix4fv(view_uniform       , 1 , GL_FALSE , glm::value_ptr(view));
-            glUniformMatrix4fv(projection_uniform , 1 , GL_FALSE , glm::value_ptr(projection));
-        }
-
-        onUpdate(dt);
-        onRender();
+        camera.computeMatrices(view, projection);
+        glUniformMatrix4fv(view_uniform, 1, GL_FALSE, glm::value_ptr(view));
+        glUniformMatrix4fv(projection_uniform, 1, GL_FALSE, glm::value_ptr(projection));
 
         emitter.onUpdate(dt);
         emitter.onRender(renderer);
+
+        pa.onUpdate(dt);
+        pa.onRender(renderer);
         
         // Overlay text
         {
@@ -373,7 +310,6 @@ int main() {
                     (void*)g_VirtualScene["axes"].first_index
                     );
             glBindVertexArray(0);
-            TextRendering_ShowEulerAngles(window);
             TextRendering_ShowProjection(window);
             TextRendering_ShowFramesPerSecond(window);
         }
@@ -384,53 +320,6 @@ int main() {
 
     glfwTerminate();
     return 0;
-}
-
-void onUpdate(float dt) {
-    for (unsigned long int i = 0; i < particles.size(); i++) {
-        if (!particles[i].active) {
-            continue;
-        }
-        particles[i].life -= dt;
-        if (particles[i].life < 0.0f) {
-            particles[i].active = false;
-            continue;
-        }
-        particles[i].xs += dt*particles[i].xa/2;
-        particles[i].ys += dt*particles[i].ya/2;
-        particles[i].zs += dt*particles[i].za/2;
-        particles[i].x += dt*particles[i].xs;
-        particles[i].y += dt*particles[i].ys;
-        particles[i].z += dt*particles[i].zs;
-    }
-}
-
-void onRender() {
-    for (unsigned long int i = 0; i < particles.size(); i++) {
-        if (!particles[i].active) {
-            continue;
-        }
-        // Linear interpolation of lifetime
-        float l = 1.0f - (particles[i].life / particles[i].maxlife);
-        float s = ((1.0f-l) * particles[i].beginSize) + (l* particles[i].endSize);
-        // Compute transform matrix
-        glm::mat4 model = Matrix_Identity();
-        auto translate = Matrix_Translate(particles[i].x, particles[i].y, particles[i].z);
-        auto scale = Matrix_Scale(s, s, s);
-        model *= translate;
-        model *= scale;
-        // Send transform matrix to GPU
-        glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
-        // Draw object
-        glUniform1i(render_as_black_uniform, false);
-        glDrawElements(
-                g_VirtualScene["cube_faces"].rendering_mode,
-                g_VirtualScene["cube_faces"].num_indices,
-                GL_UNSIGNED_INT,
-                (void*)g_VirtualScene["cube_faces"].first_index
-                );
-
-    }
 }
 
 void DrawCube(GLint render_as_black_uniform) {
@@ -492,14 +381,17 @@ GLuint BuildTriangles() {
         0.0f,  0.0f,  0.0f, 1.0f, // posição do vértice 12
         0.0f,  0.0f,  1.0f, 1.0f, // posição do vértice 13
     };
+    // Setup (just so things get to exist)
     GLuint VBO_model_coefficients_id;
     glGenBuffers(1, &VBO_model_coefficients_id);
     GLuint vertex_array_object_id;
     glGenVertexArrays(1, &vertex_array_object_id);
     glBindVertexArray(vertex_array_object_id);
+    // Transfer data
     glBindBuffer(GL_ARRAY_BUFFER, VBO_model_coefficients_id);
     glBufferData(GL_ARRAY_BUFFER, sizeof(model_coefficients), NULL, GL_STATIC_DRAW);
     glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(model_coefficients), model_coefficients);
+    // Setup shader stuff
     GLuint location = 0; // "(location = 0)" em "shader_vertex.glsl"
     GLint  number_of_dimensions = 4; // vec4 em "shader_vertex.glsl"
     glVertexAttribPointer(location, number_of_dimensions, GL_FLOAT, GL_FALSE, 0, 0);
@@ -713,7 +605,9 @@ GLuint CreateGpuProgram(GLuint vertex_shader_id, GLuint fragment_shader_id) {
 
 void FramebufferSizeCallback(GLFWwindow* window, int width, int height) {
     glViewport(0, 0, width, height);
-    g_ScreenRatio = (float)width / height;
+    camera.screenRatio = ((float)width) / ((float) height);
+    camera.width = (float) width;
+    camera.height = (float) height;
 }
 
 bool g_LeftMouseButtonPressed = false;
@@ -721,10 +615,102 @@ bool g_RightMouseButtonPressed = false;
 bool g_MiddleMouseButtonPressed = false;
 double g_LastCursorPosX, g_LastCursorPosY;
 
+void spawnParticleAt(glm::vec4 position) {
+    Particle::ParticleProprieties particle;
+
+    // Configurar o particleProprieties
+    particle.x = position.x;
+    particle.y = position.y;
+    particle.z = position.z;
+    particle.xs = 0;
+    particle.ys = 0;
+    particle.zs = 0;
+    particle.xa = 0;
+    particle.ya = 0;
+    particle.za = 0;
+    particle.rotationX = 0;
+    particle.rotationY = 0;
+    particle.rotationZ = 0;
+    particle.rotationSpeedX = 10000;
+    particle.rotationSpeedY = 10000;
+    particle.rotationSpeedZ = 10000;
+    particle.size = 0.3f;
+    particle.sizeChange = 0.0f;
+    particle.duration = 100000.0f;
+
+    // Carregar o objeto da particula (nesse caso o cubo)
+    RenderObject ro((void*)g_VirtualScene["cube_faces"].first_index, g_VirtualScene["cube_faces"].num_indices,  g_VirtualScene["cube_faces"].rendering_mode);
+    particle.object = ro;
+
+    emitter.emit(particle);
+}
+
 void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
     if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
         glfwGetCursorPos(window, &g_LastCursorPosX, &g_LastCursorPosY);
         g_LeftMouseButtonPressed = true;
+
+        glm::vec4 camera_position_c;
+        glm::vec4 camera_view_vector;
+        glm::vec4 camera_up_vector = glm::vec4(0.0f, 1.0f, 0.0f, 0.0f);
+        {
+            float r = camera.distance;
+            float y = r * std::sin(camera.phi);
+            float z = r * std::cos(camera.phi) * std::cos(camera.theta);
+            float x = r * std::cos(camera.phi) * std::sin(camera.theta);
+            camera_position_c = glm::vec4(x, y, z, 1.0f);
+            glm::vec4 camera_lookat_l = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
+            camera_view_vector = camera_lookat_l - camera_position_c;
+        }
+
+        /*
+        camera_view_vector /= -norm(camera_view_vector);
+
+        float t = std::fabs(camera.nearPlane) * tanf(camera.field_of_view / 2.0f);
+        float b = -t;
+        float r = t * camera.screenRatio;
+        float l = -r;
+
+        glm::vec4 point_right = crossproduct(camera_up_vector, camera_view_vector);
+        glm::vec4 point_up = crossproduct(camera_view_vector, point_right);
+
+        camera_view_vector *= camera.nearPlane;
+
+        point_right *= std::abs(r) * 1.333333f;
+        point_up *= std::abs(t) * 1.333333f;
+
+        glm::vec4 bl = camera_position_c - (point_right) - (point_up) + (camera_view_vector);
+        glm::vec4 tr = camera_position_c + (point_right) + (point_up) + (camera_view_vector);
+
+        glm::mat4 view;
+        glm::mat4 projection;
+        camera.computeMatrices(view, projection);
+        view = glm::inverse(view);
+
+        //spawnParticleAt(bl);
+        //spawnParticleAt(tr);
+
+        double mouseX, mouseY;
+        glfwGetCursorPos(window, &mouseX, &mouseY);
+
+        float xFactor = (float) ((mouseX / camera.width) * 2.0f - 1.0f);
+        float yFactor = (float) ((mouseY / camera.height) * -2.0f + 1.0f);
+
+        glm::vec4 spacePosition = camera_position_c + (xFactor*point_right) + (yFactor*point_up) + (camera_view_vector);
+        // spawnParticleAt(spacePosition);
+
+        glm::vec4 a = spacePosition - camera_position_c;
+         */
+
+        collision::Plane floor = {{0, 0 ,0}, {0, 1, 0}};
+        collision::Ray ray = {{camera_position_c.x, camera_position_c.y, camera_position_c.z}, {camera_view_vector.x, camera_view_vector.y, camera_view_vector.z}};
+        // collision::Ray ray = {{camera_position_c.x, camera_position_c.y, camera_position_c.z}, {camera_view_vector.x, camera_view_vector.y, camera_view_vector.z}};
+
+        float time = collision::collide(floor, ray);
+
+        collision::Point p = ray.at(time);
+        glm::vec4 pp = glm::vec4(p.x, p.y, p.z, 1.0f);
+        spawnParticleAt(pp);
     } else if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE) {
         g_LeftMouseButtonPressed = false;
     } else if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS) {
@@ -741,20 +727,19 @@ void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
 }
 
 void CursorPosCallback(GLFWwindow* window, double xpos, double ypos) {
+    float dx = xpos - g_LastCursorPosX;
+    float dy = ypos - g_LastCursorPosY;
     if (g_LeftMouseButtonPressed) {
-        // Deslocamento do cursor do mouse em x e y de coordenadas de tela!
-        float dx = xpos - g_LastCursorPosX;
-        float dy = ypos - g_LastCursorPosY;
         // Atualizamos parâmetros da câmera com os deslocamentos
-        g_CameraTheta -= 0.01f*dx;
-        g_CameraPhi   += 0.01f*dy;
+        camera.theta -= 0.01f*dx;
+        camera.phi   += 0.01f*dy;
         // Em coordenadas esféricas, o ângulo phi deve ficar entre -pi/2 e +pi/2.
         float phimax = 3.141592f/2;
         float phimin = -phimax;
-        if (g_CameraPhi > phimax)
-            g_CameraPhi = phimax;
-        if (g_CameraPhi < phimin)
-            g_CameraPhi = phimin;
+        if (camera.phi > phimax)
+            camera.phi = phimax;
+        if (camera.phi < phimin)
+            camera.phi = phimin;
         // Atualizamos as variáveis globais para armazenar a posição atual do
         // cursor como sendo a última posição conhecida do cursor.
         g_LastCursorPosX = xpos;
@@ -762,35 +747,16 @@ void CursorPosCallback(GLFWwindow* window, double xpos, double ypos) {
     }
     if (g_RightMouseButtonPressed) {
         // Deslocamento do cursor do mouse em x e y de coordenadas de tela!
-        float dx = xpos - g_LastCursorPosX;
-        float dy = ypos - g_LastCursorPosY;
-        // Atualizamos parâmetros da antebraço com os deslocamentos
-        g_ForearmAngleZ -= 0.01f*dx;
-        g_ForearmAngleX += 0.01f*dy;
-        // Atualizamos as variáveis globais para armazenar a posição atual do
-        // cursor como sendo a última posição conhecida do cursor.
-        g_LastCursorPosX = xpos;
-        g_LastCursorPosY = ypos;
     }
     if (g_MiddleMouseButtonPressed) {
-        // Deslocamento do cursor do mouse em x e y de coordenadas de tela!
-        float dx = xpos - g_LastCursorPosX;
-        float dy = ypos - g_LastCursorPosY;
-        // Atualizamos parâmetros da antebraço com os deslocamentos
-        g_TorsoPositionX += 0.01f*dx;
-        g_TorsoPositionY -= 0.01f*dy;
-        // Atualizamos as variáveis globais para armazenar a posição atual do
-        // cursor como sendo a última posição conhecida do cursor.
-        g_LastCursorPosX = xpos;
-        g_LastCursorPosY = ypos;
     }
 }
 
 void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset) {
-    g_CameraDistance -= 1.0f*yoffset;
-    const float verysmallnumber = std::numeric_limits<float>::epsilon();
-    if (g_CameraDistance < verysmallnumber) {
-        g_CameraDistance = verysmallnumber;
+    camera.distance-= 1.0f*yoffset;
+    const float verySmallNumber = std::numeric_limits<float>::epsilon();
+    if (camera.distance < verySmallNumber) {
+        camera.distance = verySmallNumber;
     }
 }
 
@@ -800,25 +766,14 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
             std::exit(100 + i);
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
         glfwSetWindowShouldClose(window, GL_TRUE);
-    float delta = 3.141592 / 16; // 22.5 graus, em radianos.
     if (key == GLFW_KEY_X && action == GLFW_PRESS) {
-        g_AngleX += (mod & GLFW_MOD_SHIFT) ? -delta : delta;
     } else if (key == GLFW_KEY_Y && action == GLFW_PRESS) {
-        g_AngleY += (mod & GLFW_MOD_SHIFT) ? -delta : delta;
     } else if (key == GLFW_KEY_Z && action == GLFW_PRESS) {
-        g_AngleZ += (mod & GLFW_MOD_SHIFT) ? -delta : delta;
     } else if (key == GLFW_KEY_SPACE && action == GLFW_PRESS) {
-        g_AngleX = 0.0f;
-        g_AngleY = 0.0f;
-        g_AngleZ = 0.0f;
-        g_ForearmAngleX = 0.0f;
-        g_ForearmAngleZ = 0.0f;
-        g_TorsoPositionX = 0.0f;
-        g_TorsoPositionY = 0.0f;
     } else if (key == GLFW_KEY_P && action == GLFW_PRESS) {
-        g_UsePerspectiveProjection = true;
+        camera.usePerspectiveProjection = true;
     } else if (key == GLFW_KEY_O && action == GLFW_PRESS) {
-        g_UsePerspectiveProjection = false;
+        camera.usePerspectiveProjection = false;
     } else if (key == GLFW_KEY_H && action == GLFW_PRESS) {
         g_ShowInfoText = !g_ShowInfoText;
     } else if (key == GLFW_KEY_F && action == GLFW_PRESS) {
@@ -847,6 +802,10 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
         // Carregar o objeto da particula (nesse caso o cubo)
         RenderObject ro((void*)g_VirtualScene["cube_faces"].first_index, g_VirtualScene["cube_faces"].num_indices,  g_VirtualScene["cube_faces"].rendering_mode);
         particle.object = ro;
+
+#define PI 3.141592
+#define SIDES 5
+#define VSIDES 5
 
         {
             float speed = 1.0f;
@@ -904,77 +863,6 @@ void ErrorCallback(int error, const char* description) {
     fprintf(stderr, "ERROR: GLFW: %s\n", description);
 }
 
-void TextRendering_ShowModelViewProjection(
-        GLFWwindow* window,
-        glm::mat4 projection,
-        glm::mat4 view,
-        glm::mat4 model,
-        glm::vec4 p_model
-        ) {
-    if ( !g_ShowInfoText )
-        return;
-
-    glm::vec4 p_world = model*p_model;
-    glm::vec4 p_camera = view*p_world;
-    glm::vec4 p_clip = projection*p_camera;
-    glm::vec4 p_ndc = p_clip / p_clip.w;
-
-    float pad = TextRendering_LineHeight(window);
-
-    TextRendering_PrintString(window, " Model matrix             Model     In World Coords.", -1.0f, 1.0f-pad, 1.0f);
-    TextRendering_PrintMatrixVectorProduct(window, model, p_model, -1.0f, 1.0f-2*pad, 1.0f);
-
-    TextRendering_PrintString(window, "                                        |  ", -1.0f, 1.0f-6*pad, 1.0f);
-    TextRendering_PrintString(window, "                            .-----------'  ", -1.0f, 1.0f-7*pad, 1.0f);
-    TextRendering_PrintString(window, "                            V              ", -1.0f, 1.0f-8*pad, 1.0f);
-
-    TextRendering_PrintString(window, " View matrix              World     In Camera Coords.", -1.0f, 1.0f-9*pad, 1.0f);
-    TextRendering_PrintMatrixVectorProduct(window, view, p_world, -1.0f, 1.0f-10*pad, 1.0f);
-
-    TextRendering_PrintString(window, "                                        |  ", -1.0f, 1.0f-14*pad, 1.0f);
-    TextRendering_PrintString(window, "                            .-----------'  ", -1.0f, 1.0f-15*pad, 1.0f);
-    TextRendering_PrintString(window, "                            V              ", -1.0f, 1.0f-16*pad, 1.0f);
-
-    TextRendering_PrintString(window, " Projection matrix        Camera                    In NDC", -1.0f, 1.0f-17*pad, 1.0f);
-    TextRendering_PrintMatrixVectorProductDivW(window, projection, p_camera, -1.0f, 1.0f-18*pad, 1.0f);
-
-    int width, height;
-    glfwGetFramebufferSize(window, &width, &height);
-
-    glm::vec2 a = glm::vec2(-1, -1);
-    glm::vec2 b = glm::vec2(+1, +1);
-    glm::vec2 p = glm::vec2( 0,  0);
-    glm::vec2 q = glm::vec2(width, height);
-
-    glm::mat4 viewport_mapping = Matrix(
-            (q.x - p.x)/(b.x-a.x), 0.0f, 0.0f, (b.x*p.x - a.x*q.x)/(b.x-a.x),
-            0.0f, (q.y - p.y)/(b.y-a.y), 0.0f, (b.y*p.y - a.y*q.y)/(b.y-a.y),
-            0.0f , 0.0f , 1.0f , 0.0f ,
-            0.0f , 0.0f , 0.0f , 1.0f
-            );
-
-    TextRendering_PrintString(window, "                                                       |  ", -1.0f, 1.0f-22*pad, 1.0f);
-    TextRendering_PrintString(window, "                            .--------------------------'  ", -1.0f, 1.0f-23*pad, 1.0f);
-    TextRendering_PrintString(window, "                            V                           ", -1.0f, 1.0f-24*pad, 1.0f);
-
-    TextRendering_PrintString(window, " Viewport matrix           NDC      In Pixel Coords.", -1.0f, 1.0f-25*pad, 1.0f);
-    TextRendering_PrintMatrixVectorProductMoreDigits(window, viewport_mapping, p_ndc, -1.0f, 1.0f-26*pad, 1.0f);
-}
-
-// Escrevemos na tela os ângulos de Euler definidos nas variáveis globais
-// g_AngleX, g_AngleY, e g_AngleZ.
-void TextRendering_ShowEulerAngles(GLFWwindow* window) {
-    if ( !g_ShowInfoText )
-        return;
-
-    float pad = TextRendering_LineHeight(window);
-
-    char buffer[80];
-    snprintf(buffer, 80, "Euler Angles rotation matrix = Z(%.2f)*Y(%.2f)*X(%.2f)\n", g_AngleZ, g_AngleY, g_AngleX);
-
-    TextRendering_PrintString(window, buffer, -1.0f+pad/10, -1.0f+2*pad/10, 1.0f);
-}
-
 // Escrevemos na tela qual matriz de projeção está sendo utilizada.
 void TextRendering_ShowProjection(GLFWwindow* window)
 {
@@ -984,7 +872,7 @@ void TextRendering_ShowProjection(GLFWwindow* window)
     float lineheight = TextRendering_LineHeight(window);
     float charwidth = TextRendering_CharWidth(window);
 
-    if ( g_UsePerspectiveProjection )
+    if ( camera.usePerspectiveProjection )
         TextRendering_PrintString(window, "Perspective", 1.0f-13*charwidth, -1.0f+2*lineheight/10, 1.0f);
     else
         TextRendering_PrintString(window, "Orthographic", 1.0f-13*charwidth, -1.0f+2*lineheight/10, 1.0f);

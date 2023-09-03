@@ -1,0 +1,17 @@
+# ninja log v5
+119	1167	1693771714897170519	CMakeFiles/main.dir/src/particle.cpp.o	a63c5d94f192dc5
+0	95	1693772244299831642	build.ninja	99d753ab29316ccd
+4	1114	1693771714845170370	CMakeFiles/main.dir/src/emitter.cpp.o	add3d00d225d3d2f
+461	909	1693771714641169785	CMakeFiles/main.dir/src/random.cpp.o	b97ef97dc2ecf79b
+3	460	1693771714189168489	CMakeFiles/main.dir/src/camera.cpp.o	827390d76638afe7
+236	714	1693771714445169222	CMakeFiles/main.dir/src/program.cpp.o	c9e751c437c1c76e
+2	133	1693771870673962146	bin/main	e17b101993f9904
+2	129	1693771851321832622	main	e03e7f44d06a8aea
+613	1401	1693771715133171201	CMakeFiles/main.dir/src/textrendering.cpp.o	4bbb81531981ee14
+4	1432	1693771715161171281	CMakeFiles/main.dir/src/main.cpp.o	8c0190ea3f675f47
+3	234	1693771713965167847	CMakeFiles/main.dir/src/glad.c.o	8e172852d3c3a534
+3	119	1693771713849167518	CMakeFiles/main.dir/src/collisions.cpp.o	9bc458582604bdac
+6	612	1693771714341168925	CMakeFiles/main.dir/src/matrices.cpp.o	25ccb38caff1ea98
+0	40	1693772244299831642	build.ninja	eda9efbcb3126ea6
+3	1438	1693772245747873014	CMakeFiles/main.dir/src/main.cpp.o	8c0190ea3f675f47
+1439	1639	1693772245947878726	main	e03e7f44d06a8aea
