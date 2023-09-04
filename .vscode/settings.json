@@ -1,0 +1,10 @@
+{
+  "files.associations": {
+    "sstream": "cpp",
+    "random": "cpp",
+    "utility": "cpp",
+    "xlocinfo": "cpp",
+    "xstring": "cpp"
+  },
+  "C_Cpp.errorSquiggles": "disabled"
+}
