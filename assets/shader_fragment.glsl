@@ -16,6 +16,8 @@ uniform mat4 projection;
 #define SPHERE 0
 #define BUNNY  1
 #define PLANE  2
+#define ROCK   3
+#define FERN   5
 uniform int object_id;
 
 // O valor de saída ("out") de um Fragment Shader é a cor final do fragmento.
@@ -45,12 +47,6 @@ void main()
     // Vetor que define o sentido da câmera em relação ao ponto atual.
     vec4 v = normalize(camera_position - p);
 
-    // Ponto que define a posição da iluminação spot
-    vec4 l_spot = vec4(0.0,2.0,1.0,1.0);
-
-    // Vetor que define o sentido da iluminação spot
-    vec4 v_spot = normalize(vec4(0.0,-1.0,0.0,0.0));
-
     // Vetor que define o sentido da reflexão especular ideal.
     vec4 r = -l + 2 * n * dot(n,l); // PREENCHA AQUI o vetor de reflexão especular ideal
 
@@ -59,7 +55,6 @@ void main()
     vec3 Ks; // Refletância especular
     vec3 Ka; // Refletância ambiente
     float q; // Expoente especular para o modelo de iluminação de Phong
-
 
     if ( object_id == SPHERE )
     {
@@ -88,6 +83,22 @@ void main()
         Ka = vec3(0.0,0.0,0.0);
         q = 20.0;
     }
+    else if ( object_id == ROCK )
+    {
+        // Propriedades espectrais da pedra
+        Kd = vec3(0.6, 0.6, 0.6);
+        Ks = vec3(0.0, 0.0, 0.0);
+        Ka = vec3(0.0,0.0,0.0);
+        q = 1.0;
+    }
+    else if ( object_id == FERN )
+    {
+        // Propriedades espectrais do fern
+        Kd = vec3(0.6, 0.8, 0.6);
+        Ks = vec3(0.0, 0.0, 0.0);
+        Ka = Kd * 0.3;
+        q = 15.0;
+    }
     else // Objeto desconhecido = preto
     {
         Kd = vec3(0.0,0.0,0.0);
@@ -100,7 +111,7 @@ void main()
     vec3 I = vec3(1.0,1.0,1.0); // PREENCH AQUI o espectro da fonte de luz
 
     // Espectro da luz ambiente
-    vec3 Ia = vec3(0.2,0.2,0.2); // PREENCHA AQUI o espectro da luz ambiente
+    vec3 Ia = vec3(1.0,1.0,1.0); // PREENCHA AQUI o espectro da luz ambiente
 
     // Termo difuso utilizando a lei dos cossenos de Lambert
     vec3 lambert_diffuse_term = Kd*I*max(0,dot(n,l)); // PREENCHA AQUI o termo difuso de Lambert
@@ -127,17 +138,7 @@ void main()
 
     // Cor final do fragmento calculada com uma combinação dos termos difuso,
     // especular, e ambiente. Veja slide 129 do documento Aula_17_e_18_Modelos_de_Iluminacao.pdf.
-
-    vec4 pl = normalize(p - l_spot); // vetor com direção para o ponto do objeto a ser iluminado
-    float Bcos = dot(pl,v_spot); // cosseno do ângulo beta
-    float alphaCos = cos(radians(30)); // cosseno do ângulo alpha de abertura da iluminação spot
-
-    if (Bcos > alphaCos) {
-        color.rgb = lambert_diffuse_term + ambient_term + phong_specular_term;
-    }
-    else {
-        color.rgb = ambient_term;
-    }
+    color.rgb = lambert_diffuse_term + ambient_term + phong_specular_term;
 
     // Cor final com correção gamma, considerando monitor sRGB.
     // Veja https://en.wikipedia.org/w/index.php?title=Gamma_correction&oldid=751281772#Windows.2C_Mac.2C_sRGB_and_TV.2Fvideo_standard_gammas

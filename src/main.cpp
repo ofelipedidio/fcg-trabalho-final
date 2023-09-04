@@ -104,10 +104,6 @@ struct ObjModel
     }
 };
 
-// Declaração de funções utilizadas para pilha de matrizes de modelagem.
-void PushMatrix(glm::mat4 M);
-void PopMatrix(glm::mat4 &M);
-
 // Declaração de várias funções utilizadas em main().  Essas estão definidas
 // logo após a definição de main() neste arquivo.
 void BuildTrianglesAndAddToVirtualScene(ObjModel *);                         // Constrói representação de um ObjModel como malha de triângulos para renderização
@@ -295,9 +291,21 @@ int main(int argc, char *argv[])
     ComputeNormals(&bunnymodel);
     BuildTrianglesAndAddToVirtualScene(&bunnymodel);
 
-    ObjModel planemodel("../data/tree_stump_01_4k.obj");
+    ObjModel planemodel("../data/plane.obj");
     ComputeNormals(&planemodel);
     BuildTrianglesAndAddToVirtualScene(&planemodel);
+
+    ObjModel rockmodel("../data/tree_stump_01_4k.obj");
+    ComputeNormals(&rockmodel);
+    BuildTrianglesAndAddToVirtualScene(&rockmodel);
+
+    ObjModel fern2bmodel("../data/fern_02_8k.obj");
+    ComputeNormals(&fern2bmodel);
+    BuildTrianglesAndAddToVirtualScene(&fern2bmodel);
+
+    ObjModel build1bmodel("../data/tower.obj");
+    ComputeNormals(&build1bmodel);
+    BuildTrianglesAndAddToVirtualScene(&build1bmodel);
 
     if (argc > 1)
     {
@@ -397,29 +405,80 @@ int main(int argc, char *argv[])
 #define SPHERE 0
 #define BUNNY 1
 #define PLANE 2
+#define ROCK 3
+#define FERN 4
+#define BUILD1 5
 
         // Desenhamos o modelo da esfera
-        model = Matrix_Translate(-1.0f, 0.0f, 0.0f);
-        glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, SPHERE);
-        DrawVirtualObject("the_sphere");
-
-        // Desenhamos o modelo do coelho
-        model = Matrix_Translate(1.0f, 0.0f, 0.0f) * Matrix_Rotate_Z(g_AngleZ) * Matrix_Rotate_Y(g_AngleY) * Matrix_Rotate_X(g_AngleX);
-        glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, BUNNY);
-        DrawVirtualObject("the_bunny");
-
-        model = Matrix_Translate(10.0f, 0.0f, 0.0f) * Matrix_Rotate_Z(g_AngleZ) * Matrix_Rotate_Y(g_AngleY) * Matrix_Rotate_X(g_AngleX);
-        glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model));
-        glUniform1i(g_object_id_uniform, BUNNY);
-        DrawVirtualObject("the_bunny");
 
         // Desenhamos o modelo do plano
-        model = Matrix_Translate(0.0f, -1.0f, 0.0f) * Matrix_Scale(1.01f, 1.01f, 1.01f);
+        model = Matrix_Translate(0.0f, -1.0f, 0.0f) * Matrix_Scale(50.0f, 1.0f, 50.0f);
         glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model));
         glUniform1i(g_object_id_uniform, PLANE);
+        DrawVirtualObject("the_plane");
+
+        // Desenhamos o modelo da pedra
+        model = Matrix_Translate(6.0f, -0.5f, -20.0f) * Matrix_Scale(15.0f, 15.0f, 15.0f);
+        glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, ROCK);
         DrawVirtualObject("tree_stump_01");
+
+        // Desenhamos o modelo do fern
+        model = Matrix_Translate(3.0f, -1.0f, 0.0f) * Matrix_Scale(2.0f, 2.0f, 2.0f);
+        glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, FERN);
+        DrawVirtualObject("fern_02_b");
+
+        model = Matrix_Translate(3.0f, -1.0f, -2.0f) * Matrix_Scale(2.0f, 2.0f, 2.0f);
+        glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, FERN);
+        DrawVirtualObject("fern_02_b");
+
+        model = Matrix_Translate(3.0f, -1.0f, -4.0f) * Matrix_Scale(2.0f, 2.0f, 2.0f);
+        glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, FERN);
+        DrawVirtualObject("fern_02_b");
+
+        model = Matrix_Translate(3.0f, -1.0f, -6.0f) * Matrix_Scale(2.0f, 2.0f, 2.0f);
+        glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, FERN);
+        DrawVirtualObject("fern_02_b");
+
+        model = Matrix_Translate(3.0f, -1.0f, -8.0f) * Matrix_Scale(2.0f, 2.0f, 2.0f);
+        glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, FERN);
+        DrawVirtualObject("fern_02_b");
+
+        model = Matrix_Translate(-3.0f, -1.0f, 0.0f) * Matrix_Scale(2.0f, 2.0f, 2.0f);
+        glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, FERN);
+        DrawVirtualObject("fern_02_b");
+
+        model = Matrix_Translate(-3.0f, -1.0f, -2.0f) * Matrix_Scale(2.0f, 2.0f, 2.0f);
+        glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, FERN);
+        DrawVirtualObject("fern_02_b");
+
+        model = Matrix_Translate(-3.0f, -1.0f, -4.0f) * Matrix_Scale(2.0f, 2.0f, 2.0f);
+        glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, FERN);
+        DrawVirtualObject("fern_02_b");
+
+        model = Matrix_Translate(-3.0f, -1.0f, -6.0f) * Matrix_Scale(2.0f, 2.0f, 2.0f);
+        glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, FERN);
+        DrawVirtualObject("fern_02_b");
+
+        model = Matrix_Translate(-3.0f, -1.0f, -15.0f) * Matrix_Scale(2.0f, 2.0f, 2.0f);
+        glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, FERN);
+        DrawVirtualObject("fern_02_b");
+
+        model = Matrix_Translate(0.0f, 1.0f, -8.0f) * Matrix_Scale(2.0f, 2.0f, 2.0f);
+        glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, BUILD1);
+        DrawVirtualObject("tower");
+
         // GLfloat *vertex = (GLfloat *)((void *)(g_VirtualScene["tree_stump_01"].first_index));
         //  print first 3 objects
         /*for (int i = 0; i < 3; i++)
@@ -525,26 +584,6 @@ void LoadShadersFromFiles()
     g_view_uniform = glGetUniformLocation(g_GpuProgramID, "view");             // Variável da matriz "view" em shader_vertex.glsl
     g_projection_uniform = glGetUniformLocation(g_GpuProgramID, "projection"); // Variável da matriz "projection" em shader_vertex.glsl
     g_object_id_uniform = glGetUniformLocation(g_GpuProgramID, "object_id");   // Variável "object_id" em shader_fragment.glsl
-}
-
-// Função que pega a matriz M e guarda a mesma no topo da pilha
-void PushMatrix(glm::mat4 M)
-{
-    g_MatrixStack.push(M);
-}
-
-// Função que remove a matriz atualmente no topo da pilha e armazena a mesma na variável M
-void PopMatrix(glm::mat4 &M)
-{
-    if (g_MatrixStack.empty())
-    {
-        M = Matrix_Identity();
-    }
-    else
-    {
-        M = g_MatrixStack.top();
-        g_MatrixStack.pop();
-    }
 }
 
 // Função que computa as normais de um ObjModel, caso elas não tenham sido
