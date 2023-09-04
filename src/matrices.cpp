@@ -224,7 +224,7 @@ float dotproduct(glm::vec4 u, glm::vec4 v)
     float v3 = v.z;
     float v4 = v.w;
 
-    if ( u4 != 0.0f || v4 != 0.0f )
+    if ( std::abs(u4) > 0e-5 || std::abs(v4) > 0e-5 )
     {
         fprintf(stderr, "ERROR: Produto escalar não definido para pontos.\n");
         std::exit(EXIT_FAILURE);
