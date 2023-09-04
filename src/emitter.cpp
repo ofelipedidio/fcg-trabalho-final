@@ -25,7 +25,7 @@ namespace Emitter {
         this->particleEnd = 0;
     }
 
-    void ParticleEmitter::emit(float x, float y, float z, float xs, float ys, float zs) {
+    void ParticleEmitter::emit(float x, float y, float z, float xs, float ys, float zs, float startSize) {
         Particle &particle = this->particles[particleEnd];
         particle.x = x;
         particle.y = y;
@@ -33,6 +33,7 @@ namespace Emitter {
         particle.xs = xs;
         particle.ys = ys;
         particle.zs = zs;
+        particle.startSize = startSize;
         particle.life = 1.0f;
 
         particleEnd = (particleEnd + 1) % this->particles.size();
@@ -41,7 +42,7 @@ namespace Emitter {
         }
     }
 
-    void ParticleEmitter::emitIn(float x, float y, float z, float xs, float ys, float zs, float timeToEmit) {
+    void ParticleEmitter::emitIn(float x, float y, float z, float xs, float ys, float zs, float startSize, float timeToEmit) {
         Particle &particle = this->particles[particleEnd];
         particle.x = x;
         particle.y = y;
@@ -49,31 +50,29 @@ namespace Emitter {
         particle.xs = xs;
         particle.ys = ys;
         particle.zs = zs;
-        particle.life = 1.0f + timeToEmit;
+        particle.startSize = startSize;
+        particle.life = 1.0f;
 
-        particleEnd = (particleEnd + 1) % this->particles.size();
-        if (particleEnd == particleStart) {
-            particleStart = (particleStart + 1) % this->particles.size();
-        }
+        queue.emplace(time+timeToEmit, particle);
     }
 
 #define dbg(x) (#x " = ") << x << " | "
 
     void ParticleEmitter::onUpdate(float dt) {
+        time += dt;
+        while ((!queue.empty()) && queue.top().first <= time) {
+            this->particles[particleEnd] = queue.top().second;
+            queue.pop();
+            particleEnd = (particleEnd + 1) % this->particles.size();
+            if (particleEnd == particleStart) {
+                particleStart = (particleStart + 1) % this->particles.size();
+            }
+        }
+
         for (unsigned long int i = this->particleStart; i != this->particleEnd; i = (i+1) % this->particles.size()) {
             Particle &particle = this->particles[i];
 
             float timeDelta = dt / this->proprieties.duration;
-            if (particle.life > 1.0f) {
-                particle.life -= dt;
-
-                if (particle.life >= 1.0f) {
-                    continue;
-                } else {
-                    timeDelta = (1.0f-particle.life) / this->proprieties.duration;
-                }
-            }
-
             particle.life -= timeDelta;
 
             if (particle.life <= 0.0f) {
@@ -121,7 +120,7 @@ namespace Emitter {
             float rotationY = this->proprieties.rotationSpeedX * t;
             float rotationZ = this->proprieties.rotationSpeedX * t;
 
-            float size = (this->proprieties.initialSize * (1.0f-(1.0f-particle.life))) + (this->proprieties.finalSize * (1.0f-particle.life));
+            float size = (particle.startSize * (1.0f-(1.0f-particle.life))) + (this->proprieties.finalSize * (1.0f-particle.life));
 
             // Create tranformation matrix
             auto model = Matrix_Identity();

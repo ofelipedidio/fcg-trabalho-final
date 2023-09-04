@@ -6,6 +6,8 @@
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
+#include <queue>
+#include <utility>
 
 // Headers abaixo são específicos de C++
 #include <iostream>
@@ -31,6 +33,15 @@
 #include "object.h"
 
 namespace Emitter {
+    namespace _internal {
+        template<typename F, typename S>
+        struct CompareFirst {
+            bool operator()(const std::pair<F, S>& a, const std::pair<F, S>& b) const {
+                return a.first > b.first;
+            }
+        };
+    }
+
     typedef struct ParticleProprieties {
         // Position
         float x, y, z;
@@ -46,23 +57,25 @@ namespace Emitter {
     } ParticleProprieties;
 
     class ParticleEmitter {
-    private:
+    public:
         ParticleProprieties proprieties;
         struct Particle {
             float x, y, z;
             float xs, ys, zs;
-            float seed;
+            float startSize;
             float life;
         };
 
         std::vector<Particle> particles;
+        std::priority_queue<std::pair<float, Particle>, std::vector<std::pair<float, Particle>>, _internal::CompareFirst<float, Particle>> queue;
+        float time = 0.0f;
         unsigned long int particleStart;
         unsigned long int particleEnd;
 
     public:
         ParticleEmitter(int maxParticleCount, ParticleProprieties proprieties);
-        void emit(float x, float y, float z, float xs, float ys, float zs);
-        void emitIn(float x, float y, float z, float xs, float ys, float zs, float timeToEmit);
+        void emit(float x, float y, float z, float xs, float ys, float zs, float startSize);
+        void emitIn(float x, float y, float z, float xs, float ys, float zs, float startSize, float timeToEmit);
         void onUpdate(float dt);
         void onRender(Renderer &renderer);
     };

@@ -73,12 +73,14 @@
 				0,
 				1,
 				2,
-				4,
+				3,
 				5,
 				6,
 				7,
 				8,
-				9
+				9,
+				10,
+				11
 			]
 		},
 		{
@@ -98,7 +100,7 @@
 			"language" : "C",
 			"sourceIndexes" : 
 			[
-				3
+				4
 			]
 		}
 	],
@@ -190,12 +192,20 @@
 				6,
 				7,
 				8,
-				9
+				9,
+				10,
+				11
 			]
 		}
 	],
 	"sources" : 
 	[
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "src/bezier.cpp",
+			"sourceGroupIndex" : 0
+		},
 		{
 			"backtrace" : 1,
 			"compileGroupIndex" : 0,
@@ -230,6 +240,12 @@
 			"backtrace" : 1,
 			"compileGroupIndex" : 0,
 			"path" : "src/matrices.cpp",
+			"sourceGroupIndex" : 0
+		},
+		{
+			"backtrace" : 1,
+			"compileGroupIndex" : 0,
+			"path" : "src/movement.cpp",
 			"sourceGroupIndex" : 0
 		},
 		{

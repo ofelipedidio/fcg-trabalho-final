@@ -31,10 +31,54 @@
 
 #include "collisions.h"
 #include "emitter.h"
+#include "camera.h"
 
 #define print_vec4(v) "(" << v.x << ", " << v.y << ", " << v.z << ", " << v.w << ")"
 #define debug_var(var) std::cout << #var " = " << var << std::endl;
 
+#include "emitter.h"
+Emitter::ParticleEmitter *e1;
+Emitter::ParticleEmitter *e2;
+
+void sphericalFirework(glm::vec4 position, Emitter::ParticleEmitter *stock, Emitter::ParticleEmitter *explosion) {
+#define PI 3.141592
+#define SIDES 7
+#define VSIDES 7
+
+    float height = 10.0f;
+
+    for (int k = 0; k < 10; k++) {
+        float size = (10.0f - k) / 20.0f;
+        stock->emitIn(position.x, position.y, position.z, 0, 0.75f * (height / stock->proprieties.duration), 0, size, k / 10.0f);
+    }
+
+    float speed = 1.0f;
+    float r = speed;
+    for (float i = 0.0f; i < 2.0f * PI; i += (2.0f * PI) / SIDES) {
+        for (float j = -PI / 2.0f; j < PI * 2.0f; j += PI / VSIDES) {
+            float xs = r * cos(i) * sin(j);
+            float ys = r * sin(i) + 1.0f;
+            float zs = r * cos(i) * cos(j);
+            float x = position.x;
+            float y = position.y+height;
+            float z = position.z;
+
+            for (int k = 0; k < 10; k++) {
+                float size = (10.0f - k) / 20.0f;
+                explosion->emitIn(x, y, z, xs, ys, zs, size, (stock->proprieties.duration) + (k / 10.0f));
+            }
+        }
+    }
+}
+
+void spawnParticleAt(glm::vec4 position);
+
+void onClickFloor(int button, int action, int mods, float x, float z) {
+    glm::vec4 point = {x, 0.0f, z, 1.0f};
+    sphericalFirework(point, e2, e1);
+}
+
+void showReticle(GLFWwindow* window);
 
 GLint model_uniform           ; // Variável da matriz "model"
 GLint view_uniform            ; // Variável da matriz "view" em shader_vertex.glsl
@@ -42,9 +86,6 @@ GLint projection_uniform      ; // Variável da matriz "projection" em shader_ve
 GLint render_as_black_uniform ; // Variável booleana em shader_vertex.glsl
 
 
-// Declaração de várias funções utilizadas em main().  Essas estão definidas
-// logo após a definição de main() neste arquivo.
-void DrawCube(GLint render_as_black_uniform); // Desenha um cubo
 GLuint BuildTriangles(); // Constrói triângulos para renderização
 void LoadShadersFromFiles(); // Carrega os shaders de vértice e fragmento, criando um programa de GPU
 GLuint loadVertexShader(const char* filename);   // Carrega um vertex shader
@@ -52,15 +93,11 @@ GLuint loadFragmentShader(const char* filename); // Carrega um fragment shader
 void LoadShader(const char* filename, GLuint shader_id); // Função utilizada pelas duas acima
 GLuint CreateGpuProgram(GLuint vertex_shader_id, GLuint fragment_shader_id); // Cria um programa de GPU
 
-// Declaração de funções auxiliares para renderizar texto dentro da janela
-// OpenGL. Estas funções estão definidas no arquivo "textrendering.cpp".
 void TextRendering_Init();
 float TextRendering_LineHeight(GLFWwindow* window);
 float TextRendering_CharWidth(GLFWwindow* window);
 void TextRendering_PrintString(GLFWwindow* window, const std::string &str, float x, float y, float scale = 1.0f);
 
-// Funções abaixo renderizam como texto na janela OpenGL algumas matrizes e
-// outras informações do programa. Definidas após main().
 void TextRendering_ShowModelViewProjection(GLFWwindow* window, glm::mat4 projection, glm::mat4 view, glm::mat4 model, glm::vec4 p_model);
 void TextRendering_ShowProjection(GLFWwindow* window);
 void TextRendering_ShowFramesPerSecond(GLFWwindow* window);
@@ -91,66 +128,7 @@ struct SceneObject {
 // estes são acessados.
 std::map<const char*, SceneObject> g_VirtualScene;
 
-struct Camera {
-    bool usePerspectiveProjection = true;
-
-    // Perspective parameters
-    float theta = 0.0f;
-    float phi = 0.0f;
-    float distance = 50.0f;
-    float field_of_view = 3.141592 / 3.0f;
-
-    // General parameters
-    float nearPlane = -0.1f;
-    float farPlane = -100000.0f;
-    float screenRatio = 1.0f;
-
-    float width = 800.0f;
-    float height = 800.0f;
-
-    bool isFreeCamera = false;
-    glm::vec4 position = glm::vec4(0,0,0,1);
-    glm::vec4 upVector = glm::vec4(0, 1, 0, 0);
-
-    glm::vec4 viewVector = glm::vec4(0, 0, 1, 0);
-    glm::vec4 rightVector = glm::vec4(1, 0, 0, 0);
-    glm::vec4 topVector = glm::vec4(0, 1, 0, 0);
-
-    void computeMatrices(glm::mat4 &view, glm::mat4 &projection) {
-        // View
-        {
-            if (!isFreeCamera) {
-                float r = distance;
-                float y = r * std::sin(phi);
-                float z = r * std::cos(phi) * std::cos(theta);
-                float x = r * std::cos(phi) * std::sin(theta);
-                position = glm::vec4(x, y, z, 1.0f);
-                glm::vec4 lookAtPoint = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
-                viewVector = lookAtPoint - position;
-                view = Matrix_Camera_View(position, viewVector, upVector);
-                glUniformMatrix4fv(view_uniform, 1, GL_FALSE, glm::value_ptr(view));
-            }
-            view = Matrix_Camera_View(position, viewVector, upVector);
-            glUniformMatrix4fv(view_uniform, 1, GL_FALSE, glm::value_ptr(view));
-        }
-
-        // Projection
-        {
-            if (usePerspectiveProjection) {
-                projection = Matrix_Perspective(field_of_view, screenRatio, nearPlane, farPlane);
-            } else {
-                float t = 1.5f*distance/2.5f;
-                float b = -t;
-                float r = t*screenRatio;
-                float l = -r;
-                projection = Matrix_Orthographic(l, r, b, t, nearPlane, farPlane);
-            }
-            glUniformMatrix4fv(projection_uniform , 1 , GL_FALSE , glm::value_ptr(projection));
-        }
-    }
-};
-
-Camera camera;
+game::Camera camera;
 
 // Variável que controla se o texto informativo será mostrado na tela.
 bool g_ShowInfoText = true;
@@ -209,12 +187,6 @@ void displaySystemInfo() {
     printf("GPU: %s, %s, OpenGL %s, GLSL %s\n", vendor, renderer, glversion, glslversion);
 }
 
-#include "particle.h"
-Particle::ParticleEmitter emitter(10000);
-
-#include "emitter.h"
-Emitter::ParticleEmitter *e1;
-
 int main() {
     camera.usePerspectiveProjection = true;
     camera.phi = 0.0f;
@@ -232,10 +204,12 @@ int main() {
 
     TextRendering_Init();
 
-    model_uniform           = glGetUniformLocation(g_GpuProgramID, "model"); // Variável da matriz "model"
-    view_uniform            = glGetUniformLocation(g_GpuProgramID, "view"); // Variável da matriz "view" em shader_vertex.glsl
-    projection_uniform      = glGetUniformLocation(g_GpuProgramID, "projection"); // Variável da matriz "projection" em shader_vertex.glsl
-    render_as_black_uniform = glGetUniformLocation(g_GpuProgramID, "render_as_black"); // Variável booleana em shader_vertex.glsl
+    model_uniform = glGetUniformLocation(g_GpuProgramID, "model"); // Variável da matriz "model"
+    view_uniform = glGetUniformLocation(g_GpuProgramID, "view"); // Variável da matriz "view" em shader_vertex.glsl
+    projection_uniform = glGetUniformLocation(g_GpuProgramID,
+                                              "projection"); // Variável da matriz "projection" em shader_vertex.glsl
+    render_as_black_uniform = glGetUniformLocation(g_GpuProgramID,
+                                                   "render_as_black"); // Variável booleana em shader_vertex.glsl
 
     // Habilitamos o Z-buffer. Veja slides 104-116 do documento Aula_09_Projecoes.pdf.
     glEnable(GL_DEPTH_TEST);
@@ -250,24 +224,25 @@ int main() {
 
     Emitter::ParticleProprieties emitterProprieties;
     emitterProprieties.xa = 0.0f;
-    emitterProprieties.ya = -9.8f;
+    emitterProprieties.ya = -1.0f;
     emitterProprieties.za = 0.0f;
-    emitterProprieties.rotationSpeedX = 10.0f;
-    emitterProprieties.rotationSpeedY = 10.0f;
-    emitterProprieties.rotationSpeedZ = 1.0f;
+    emitterProprieties.rotationSpeedX = 0.0f;
+    emitterProprieties.rotationSpeedY = 0.0f;
+    emitterProprieties.rotationSpeedZ = 0.0f;
     emitterProprieties.initialSize = 1.0f;
     emitterProprieties.finalSize = 0.0f;
-    emitterProprieties.duration = 4.0f;
-    RenderObject ro((void*)g_VirtualScene["cube_faces"].first_index, g_VirtualScene["cube_faces"].num_indices,  g_VirtualScene["cube_faces"].rendering_mode);
+    emitterProprieties.duration = 2.0f;
+    RenderObject ro((void *) g_VirtualScene["cube_faces"].first_index, g_VirtualScene["cube_faces"].num_indices,
+                    g_VirtualScene["cube_faces"].rendering_mode);
     emitterProprieties.object = ro;
 
-    Emitter::ParticleEmitter pa(10000, emitterProprieties);
-    e1 = &pa;
+    e1 = new Emitter::ParticleEmitter(10000, emitterProprieties);
+
+    emitterProprieties.finalSize = 0.5f;
+    e2 = new Emitter::ParticleEmitter(10000, emitterProprieties);
 
     while (!glfwWindowShouldClose(window))
     {
-        e1->emit(0, 0, 0, 10, 0, 0);
-
         double currentTime = glfwGetTime();
         float dt = currentTime - previousTime;
         previousTime = currentTime;
@@ -285,17 +260,19 @@ int main() {
         // Criar um Renderer
         Renderer renderer(g_GpuProgramID);
 
+        camera.onUpdate(dt);
+
         glm::mat4 view;
         glm::mat4 projection;
         camera.computeMatrices(view, projection);
         glUniformMatrix4fv(view_uniform, 1, GL_FALSE, glm::value_ptr(view));
         glUniformMatrix4fv(projection_uniform, 1, GL_FALSE, glm::value_ptr(projection));
 
-        emitter.onUpdate(dt);
-        emitter.onRender(renderer);
+        e1->onUpdate(dt);
+        e2->onUpdate(dt);
 
-        pa.onUpdate(dt);
-        pa.onRender(renderer);
+        e1->onRender(renderer);
+        e2->onRender(renderer);
         
         // Overlay text
         {
@@ -309,6 +286,11 @@ int main() {
                     GL_UNSIGNED_INT,
                     (void*)g_VirtualScene["axes"].first_index
                     );
+
+            if (!camera.isLookAt) {
+                showReticle(window);
+            }
+
             glBindVertexArray(0);
             TextRendering_ShowProjection(window);
             TextRendering_ShowFramesPerSecond(window);
@@ -615,107 +597,26 @@ bool g_RightMouseButtonPressed = false;
 bool g_MiddleMouseButtonPressed = false;
 double g_LastCursorPosX, g_LastCursorPosY;
 
-void spawnParticleAt(glm::vec4 position) {
-    Particle::ParticleProprieties particle;
-
-    // Configurar o particleProprieties
-    particle.x = position.x;
-    particle.y = position.y;
-    particle.z = position.z;
-    particle.xs = 0;
-    particle.ys = 0;
-    particle.zs = 0;
-    particle.xa = 0;
-    particle.ya = 0;
-    particle.za = 0;
-    particle.rotationX = 0;
-    particle.rotationY = 0;
-    particle.rotationZ = 0;
-    particle.rotationSpeedX = 10000;
-    particle.rotationSpeedY = 10000;
-    particle.rotationSpeedZ = 10000;
-    particle.size = 0.3f;
-    particle.sizeChange = 0.0f;
-    particle.duration = 100000.0f;
-
-    // Carregar o objeto da particula (nesse caso o cubo)
-    RenderObject ro((void*)g_VirtualScene["cube_faces"].first_index, g_VirtualScene["cube_faces"].num_indices,  g_VirtualScene["cube_faces"].rendering_mode);
-    particle.object = ro;
-
-    emitter.emit(particle);
-}
-
 void MouseButtonCallback(GLFWwindow* window, int button, int action, int mods) {
     if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
         glfwGetCursorPos(window, &g_LastCursorPosX, &g_LastCursorPosY);
         g_LeftMouseButtonPressed = true;
 
-        glm::vec4 camera_position_c;
-        glm::vec4 camera_view_vector;
-        glm::vec4 camera_up_vector = glm::vec4(0.0f, 1.0f, 0.0f, 0.0f);
-        {
-            float r = camera.distance;
-            float y = r * std::sin(camera.phi);
-            float z = r * std::cos(camera.phi) * std::cos(camera.theta);
-            float x = r * std::cos(camera.phi) * std::sin(camera.theta);
-            camera_position_c = glm::vec4(x, y, z, 1.0f);
-            glm::vec4 camera_lookat_l = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);
-            camera_view_vector = camera_lookat_l - camera_position_c;
-        }
-
-        /*
-        camera_view_vector /= -norm(camera_view_vector);
-
-        float t = std::fabs(camera.nearPlane) * tanf(camera.field_of_view / 2.0f);
-        float b = -t;
-        float r = t * camera.screenRatio;
-        float l = -r;
-
-        glm::vec4 point_right = crossproduct(camera_up_vector, camera_view_vector);
-        glm::vec4 point_up = crossproduct(camera_view_vector, point_right);
-
-        camera_view_vector *= camera.nearPlane;
-
-        point_right *= std::abs(r) * 1.333333f;
-        point_up *= std::abs(t) * 1.333333f;
-
-        glm::vec4 bl = camera_position_c - (point_right) - (point_up) + (camera_view_vector);
-        glm::vec4 tr = camera_position_c + (point_right) + (point_up) + (camera_view_vector);
-
-        glm::mat4 view;
-        glm::mat4 projection;
-        camera.computeMatrices(view, projection);
-        view = glm::inverse(view);
-
-        //spawnParticleAt(bl);
-        //spawnParticleAt(tr);
-
-        double mouseX, mouseY;
-        glfwGetCursorPos(window, &mouseX, &mouseY);
-
-        float xFactor = (float) ((mouseX / camera.width) * 2.0f - 1.0f);
-        float yFactor = (float) ((mouseY / camera.height) * -2.0f + 1.0f);
-
-        glm::vec4 spacePosition = camera_position_c + (xFactor*point_right) + (yFactor*point_up) + (camera_view_vector);
-        // spawnParticleAt(spacePosition);
-
-        glm::vec4 a = spacePosition - camera_position_c;
-         */
-
-        collision::Plane floor = {{0, 0 ,0}, {0, 1, 0}};
-        collision::Ray ray = {{camera_position_c.x, camera_position_c.y, camera_position_c.z}, {camera_view_vector.x, camera_view_vector.y, camera_view_vector.z}};
-        // collision::Ray ray = {{camera_position_c.x, camera_position_c.y, camera_position_c.z}, {camera_view_vector.x, camera_view_vector.y, camera_view_vector.z}};
-
-        float time = collision::collide(floor, ray);
-
-        collision::Point p = ray.at(time);
-        glm::vec4 pp = glm::vec4(p.x, p.y, p.z, 1.0f);
-        spawnParticleAt(pp);
     } else if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE) {
         g_LeftMouseButtonPressed = false;
     } else if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS) {
         glfwGetCursorPos(window, &g_LastCursorPosX, &g_LastCursorPosY);
         g_RightMouseButtonPressed = true;
+
+        // Intersect view with floor
+        collision::Plane floor = {{0, 0 ,0}, {0, 1, 0}};
+        collision::Ray ray = {
+                {camera.position.x, camera.position.y, camera.position.z},
+                {camera.viewVector.x, camera.viewVector.y, camera.viewVector.z}
+        };
+        float time = collision::collide(floor, ray);
+        collision::Point p = ray.at(time);
+        onClickFloor(button, action, mods, p.x, p.z);
     } else if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_RELEASE) {
         g_RightMouseButtonPressed = false;
     } else if (button == GLFW_MOUSE_BUTTON_MIDDLE && action == GLFW_PRESS) {
@@ -731,8 +632,8 @@ void CursorPosCallback(GLFWwindow* window, double xpos, double ypos) {
     float dy = ypos - g_LastCursorPosY;
     if (g_LeftMouseButtonPressed) {
         // Atualizamos parâmetros da câmera com os deslocamentos
-        camera.theta -= 0.01f*dx;
-        camera.phi   += 0.01f*dy;
+        camera.theta -= 0.002f*dx;
+        camera.phi   += 0.002f*dy;
         // Em coordenadas esféricas, o ângulo phi deve ficar entre -pi/2 e +pi/2.
         float phimax = 3.141592f/2;
         float phimin = -phimax;
@@ -760,16 +661,21 @@ void ScrollCallback(GLFWwindow* window, double xoffset, double yoffset) {
     }
 }
 
+RenderObject renderObjectOf(const char *object_id) {
+    return {
+            (void*)g_VirtualScene[object_id].first_index,
+            g_VirtualScene[object_id].num_indices,
+            g_VirtualScene[object_id].rendering_mode
+    };
+}
+
+
 void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod) {
     for (int i = 0; i < 10; ++i)
         if (key == GLFW_KEY_0 + i && action == GLFW_PRESS && mod == GLFW_MOD_SHIFT)
             std::exit(100 + i);
-    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
         glfwSetWindowShouldClose(window, GL_TRUE);
-    if (key == GLFW_KEY_X && action == GLFW_PRESS) {
-    } else if (key == GLFW_KEY_Y && action == GLFW_PRESS) {
-    } else if (key == GLFW_KEY_Z && action == GLFW_PRESS) {
-    } else if (key == GLFW_KEY_SPACE && action == GLFW_PRESS) {
     } else if (key == GLFW_KEY_P && action == GLFW_PRESS) {
         camera.usePerspectiveProjection = true;
     } else if (key == GLFW_KEY_O && action == GLFW_PRESS) {
@@ -777,86 +683,52 @@ void KeyCallback(GLFWwindow* window, int key, int scancode, int action, int mod)
     } else if (key == GLFW_KEY_H && action == GLFW_PRESS) {
         g_ShowInfoText = !g_ShowInfoText;
     } else if (key == GLFW_KEY_F && action == GLFW_PRESS) {
-        Particle::ParticleProprieties particle;
-
-        // Configurar o particleProprieties
-        particle.x = 0;
-        particle.y = 0;
-        particle.z = 0;
-        particle.xs = 0;
-        particle.ys = 0;
-        particle.zs = 0;
-        particle.xa = 0;
-        particle.ya = 0;
-        particle.za = 0;
-        particle.rotationX = 0;
-        particle.rotationY = 0;
-        particle.rotationZ = 0;
-        particle.rotationSpeedX = 0;
-        particle.rotationSpeedY = 0;
-        particle.rotationSpeedZ = 0;
-        particle.size = 1.0f;
-        particle.sizeChange = -1.0f;
-        particle.duration = 8.0f;
-
-        // Carregar o objeto da particula (nesse caso o cubo)
-        RenderObject ro((void*)g_VirtualScene["cube_faces"].first_index, g_VirtualScene["cube_faces"].num_indices,  g_VirtualScene["cube_faces"].rendering_mode);
-        particle.object = ro;
-
-#define PI 3.141592
-#define SIDES 5
-#define VSIDES 5
-
-        {
-            float speed = 1.0f;
-            float r = speed;
-            for (float i = 0.0f; i < 2.0f*PI; i += (2.0f*PI)/SIDES) {
-                for (float j = -PI / 2.0f; j < PI * 2.0f ; j += PI / VSIDES) {
-                    float y = r*sin(i);
-                    float z = r*cos(i)*cos(j);
-                    float x = r*cos(i)*sin(j);
-
-                    particle.x = 0;
-                    particle.y = 30.0f;
-                    particle.z = 0;
-                    particle.xs = x;
-                    particle.ys = y;
-                    particle.zs = z;
-
-                    particle.xa = -x * 0.05;
-                    particle.ya = -y * 0.05;
-                    particle.za = -z * 0.05;
-
-                    particle.ys += 1.0f;
-                    particle.ya -= 1.0f;
-
-                    particle.xs *= 20;
-                    particle.ys *= 20;
-                    particle.zs *= 20;
-                    particle.xa *= 20;
-                    particle.ya *= 20;
-                    particle.za *= 20;
-
-                    particle.xs += (Random::Float() * 2.0f - 1.0f) * 0.02;
-                    particle.ys += (Random::Float() * 2.0f - 1.0f) * 0.02;
-                    particle.zs += (Random::Float() * 2.0f - 1.0f) * 0.02;
-
-                    particle.rotationSpeedX += (Random::Float() * 2.0f - 1.0f) * 0.2;
-                    particle.rotationSpeedY += (Random::Float() * 2.0f - 1.0f) * 0.2;
-                    particle.rotationSpeedZ += (Random::Float() * 2.0f - 1.0f) * 0.2;
-
-                    particle.duration = 6.0f + 0.5f * (Random::Float() * 2.0f - 1.0f);
-
-                    for (int k = 0; k < 20; k++) {
-                        particle.size = (20.0-k)/20.0f;
-                        particle.sizeChange = -particle.size;
-                        emitter.emitIn(particle, k/20.0f);
-                    }
-                }
-            }
-        }
-
+        sphericalFirework(glm::vec4(0, 0, 0, 1), e2, e1);
+    } else if (key == GLFW_KEY_A && action == GLFW_PRESS) {
+        camera.movement.decX = true;
+    } else if (key == GLFW_KEY_A && action == GLFW_RELEASE) {
+        camera.movement.decX = false;
+    } else if (key == GLFW_KEY_D && action == GLFW_PRESS) {
+        camera.movement.incX = true;
+    } else if (key == GLFW_KEY_D && action == GLFW_RELEASE) {
+        camera.movement.incX = false;
+    } else if (key == GLFW_KEY_S && action == GLFW_PRESS) {
+        camera.movement.decY = true;
+    } else if (key == GLFW_KEY_S && action == GLFW_RELEASE) {
+        camera.movement.decY = false;
+    } else if (key == GLFW_KEY_W && action == GLFW_PRESS) {
+        camera.movement.incY = true;
+    } else if (key == GLFW_KEY_W && action == GLFW_RELEASE) {
+        camera.movement.incY = false;
+    } else if (key == GLFW_KEY_SPACE && action == GLFW_PRESS) {
+        camera.movement.incZ = true;
+    } else if (key == GLFW_KEY_SPACE && action == GLFW_RELEASE) {
+        camera.movement.incZ = false;
+    } else if (key == GLFW_KEY_LEFT_SHIFT && action == GLFW_PRESS) {
+        camera.movement.decZ = true;
+    } else if (key == GLFW_KEY_LEFT_SHIFT && action == GLFW_RELEASE) {
+        camera.movement.decZ = false;
+    } else if (key == GLFW_KEY_Q && action == GLFW_PRESS) {
+        camera.isLookAt ^= true;
+    } else if (key == GLFW_KEY_B && action == GLFW_PRESS) {
+        camera.bezierTime = 0.0f;
+        camera.bezierDuration = 4.0f;
+        camera.bezierCurve.p0 = glm::vec4(10.0f, 50.0f, 10.0f, 1.0f);
+        camera.bezierCurve.p1 = glm::vec4(0.0f, 0.0f, 20.0f, 1.0f);
+        camera.bezierCurve.p2 = glm::vec4(00.0f, -20.0f, -30.0f, 1.0f);
+        camera.bezierCurve.p3 = glm::vec4(-50.0f, 10.0f, -0.0f, 1.0f);
     }
+
+    /*
+    std::cout << "[CAMERA DEBUG]" << std::endl;
+    debug_var(camera.movement.incX);
+    debug_var(camera.movement.decX);
+    debug_var(camera.movement.incY);
+    debug_var(camera.movement.decY);
+    debug_var(camera.movement.incZ);
+    debug_var(camera.movement.decZ);
+    std::cout << "[/CAMERA DEBUG]" << std::endl;
+     */
 }
 
 void ErrorCallback(int error, const char* description) {
@@ -880,6 +752,16 @@ void TextRendering_ShowProjection(GLFWwindow* window)
 
 // Escrevemos na tela o número de quadros renderizados por segundo (frames per
 // second).
+void showReticle(GLFWwindow* window)
+{
+    static char  buffer[] = "+";
+
+    float lineheight = TextRendering_LineHeight(window);
+    float charwidth = TextRendering_CharWidth(window);
+
+    TextRendering_PrintString(window, buffer, -0.5f*charwidth, -0.5*lineheight, 1.0f);
+}
+
 void TextRendering_ShowFramesPerSecond(GLFWwindow* window)
 {
     if ( !g_ShowInfoText )

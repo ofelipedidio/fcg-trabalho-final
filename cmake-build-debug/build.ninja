@@ -49,6 +49,13 @@ cmake_ninja_workdir = /home/felipe/ufrgs/2023_01/fcg/fcg-trabalho-final/cmake-bu
 
 build cmake_object_order_depends_target_main: phony || CMakeFiles/main.dir
 
+build CMakeFiles/main.dir/src/bezier.cpp.o: CXX_COMPILER__main_unscanned_Debug /home/felipe/ufrgs/2023_01/fcg/fcg-trabalho-final/src/bezier.cpp || cmake_object_order_depends_target_main
+  DEP_FILE = CMakeFiles/main.dir/src/bezier.cpp.o.d
+  FLAGS = -Wall -Wno-unused-function -g -g -std=gnu++11 -fdiagnostics-color=always
+  INCLUDES = -I/home/felipe/ufrgs/2023_01/fcg/fcg-trabalho-final/include
+  OBJECT_DIR = CMakeFiles/main.dir
+  OBJECT_FILE_DIR = CMakeFiles/main.dir/src
+
 build CMakeFiles/main.dir/src/camera.cpp.o: CXX_COMPILER__main_unscanned_Debug /home/felipe/ufrgs/2023_01/fcg/fcg-trabalho-final/src/camera.cpp || cmake_object_order_depends_target_main
   DEP_FILE = CMakeFiles/main.dir/src/camera.cpp.o.d
   FLAGS = -Wall -Wno-unused-function -g -g -std=gnu++11 -fdiagnostics-color=always
@@ -91,6 +98,13 @@ build CMakeFiles/main.dir/src/matrices.cpp.o: CXX_COMPILER__main_unscanned_Debug
   OBJECT_DIR = CMakeFiles/main.dir
   OBJECT_FILE_DIR = CMakeFiles/main.dir/src
 
+build CMakeFiles/main.dir/src/movement.cpp.o: CXX_COMPILER__main_unscanned_Debug /home/felipe/ufrgs/2023_01/fcg/fcg-trabalho-final/src/movement.cpp || cmake_object_order_depends_target_main
+  DEP_FILE = CMakeFiles/main.dir/src/movement.cpp.o.d
+  FLAGS = -Wall -Wno-unused-function -g -g -std=gnu++11 -fdiagnostics-color=always
+  INCLUDES = -I/home/felipe/ufrgs/2023_01/fcg/fcg-trabalho-final/include
+  OBJECT_DIR = CMakeFiles/main.dir
+  OBJECT_FILE_DIR = CMakeFiles/main.dir/src
+
 build CMakeFiles/main.dir/src/particle.cpp.o: CXX_COMPILER__main_unscanned_Debug /home/felipe/ufrgs/2023_01/fcg/fcg-trabalho-final/src/particle.cpp || cmake_object_order_depends_target_main
   DEP_FILE = CMakeFiles/main.dir/src/particle.cpp.o.d
   FLAGS = -Wall -Wno-unused-function -g -g -std=gnu++11 -fdiagnostics-color=always
@@ -127,7 +141,7 @@ build CMakeFiles/main.dir/src/textrendering.cpp.o: CXX_COMPILER__main_unscanned_
 #############################################
 # Link the executable main
 
-build main: CXX_EXECUTABLE_LINKER__main_Debug CMakeFiles/main.dir/src/camera.cpp.o CMakeFiles/main.dir/src/collisions.cpp.o CMakeFiles/main.dir/src/emitter.cpp.o CMakeFiles/main.dir/src/glad.c.o CMakeFiles/main.dir/src/main.cpp.o CMakeFiles/main.dir/src/matrices.cpp.o CMakeFiles/main.dir/src/particle.cpp.o CMakeFiles/main.dir/src/program.cpp.o CMakeFiles/main.dir/src/random.cpp.o CMakeFiles/main.dir/src/textrendering.cpp.o | /home/felipe/ufrgs/2023_01/fcg/fcg-trabalho-final/lib-linux/libglfw3.a
+build main: CXX_EXECUTABLE_LINKER__main_Debug CMakeFiles/main.dir/src/bezier.cpp.o CMakeFiles/main.dir/src/camera.cpp.o CMakeFiles/main.dir/src/collisions.cpp.o CMakeFiles/main.dir/src/emitter.cpp.o CMakeFiles/main.dir/src/glad.c.o CMakeFiles/main.dir/src/main.cpp.o CMakeFiles/main.dir/src/matrices.cpp.o CMakeFiles/main.dir/src/movement.cpp.o CMakeFiles/main.dir/src/particle.cpp.o CMakeFiles/main.dir/src/program.cpp.o CMakeFiles/main.dir/src/random.cpp.o CMakeFiles/main.dir/src/textrendering.cpp.o | /home/felipe/ufrgs/2023_01/fcg/fcg-trabalho-final/lib-linux/libglfw3.a
   FLAGS = -Wall -Wno-unused-function -g -g
   LINK_LIBRARIES = /home/felipe/ufrgs/2023_01/fcg/fcg-trabalho-final/lib-linux/libglfw3.a  -lrt  -lm  -ldl  -lX11  -lpthread  -lXrandr  -lXinerama  -lXxf86vm  -lXcursor
   OBJECT_DIR = CMakeFiles/main.dir
