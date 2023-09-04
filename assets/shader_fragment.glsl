@@ -23,8 +23,8 @@ uniform mat4 projection;
 #define BUNNY  1
 #define PLANE  2
 #define ROCK   3
-#define FERN   5
-#define BUILD1 6
+#define FERN   4
+#define BUILD1 5
 uniform int object_id;
 
 // Parâmetros da axis-aligned bounding box (AABB) do modelo
@@ -87,10 +87,17 @@ void main()
         Ka = vec3(0.4,0.2,0.04);
         q = 1.0;
 
-        int sphere_radius = 5;
+        /*
+        int sphere_radius = 1;
+
+        U = (theta + M_PI) / (2.0*MPI);
+        V = (phi + M_PI_2) / M_PI;
+        */
+
+        float sphere_radius = 5;
         vec4 bbox_center = (bbox_min + bbox_max) / 2.0;
-        vec4 pl = bbox_center + sphere_radius*(normalize(position_model - bbox_center));
-        vec4 vector_p = pl - bbox_center;
+        vec4 pl = sphere_radius*(normalize(position_model - bbox_center));
+        vec4 vector_p = pl;
         float px = vector_p.x;
         float py = vector_p.y;
         float pz = vector_p.z;
@@ -99,6 +106,9 @@ void main()
         float phi = asin(py/sphere_radius);
         U = (theta + M_PI)/(2*M_PI);
         V = (phi + M_PI_2) / M_PI;
+
+        U = (p.x-bbox_min.x) / (bbox_max.x - bbox_min.x);
+        V = (p.y-bbox_min.y) / (bbox_max.y - bbox_min.y);
     }
     else if ( object_id == BUNNY )
     {
@@ -120,6 +130,9 @@ void main()
         float phi = asin(py/sphere_radius);
         U = (theta + M_PI)/(2*M_PI);
         V = (phi + M_PI_2) / M_PI;
+
+        U = (p.x-bbox_min.x) / (bbox_max.x - bbox_min.x);
+        V = (p.y-bbox_min.y) / (bbox_max.y - bbox_min.y);
     }
     else if ( object_id == PLANE )
     {
@@ -171,11 +184,35 @@ void main()
         U = (theta + M_PI)/(2*M_PI);
         V = (phi + M_PI_2) / M_PI;
     }
-  
+    else if ( object_id == BUILD1 )
+    {
+        // Propriedades espectrais do fern
+        Ks = vec3(0.0, 0.0, 0.0);
+        Ka = vec3(0.6, 0.8, 0.6) * 0.3;
+        q = 15.0;
+
+        int sphere_radius = 5;
+        vec4 bbox_center = (bbox_min + bbox_max) / 2.0;
+        vec4 pl = bbox_center + sphere_radius*(normalize(position_model - bbox_center));
+        vec4 vector_p = pl - bbox_center;
+        float px = vector_p.x;
+        float py = vector_p.y;
+        float pz = vector_p.z;
+
+        float theta = atan(px,pz);
+        float phi = asin(py/sphere_radius);
+        U = (theta + M_PI)/(2*M_PI);
+        V = (phi + M_PI_2) / M_PI;
+    }
+    U = (p.x-bbox_min.x) / (bbox_max.x - bbox_min.x);
+    V = (p.y-bbox_min.y) / (bbox_max.y - bbox_min.y);
 
     // Obtemos a refletância difusa a partir da leitura da imagem TextureImage0
     vec3 Kd0 = texture(TextureImage0, vec2(U,V)).rgb;
     vec3 Kd1 = texture(TextureImage1, vec2(U,V)).rgb;
+    //Kd0 = vec3(1, 0, 0);
+    Kd0 = vec3(U, V, 0);
+    Kd1 = vec3(0, 0, 0);
 
     // Espectro da fonte de iluminação
     vec3 I = vec3(1.0,1.0,1.0); // PREENCH AQUI o espectro da fonte de luz
@@ -184,7 +221,7 @@ void main()
     vec3 Ia = vec3(1.0,1.0,1.0); // PREENCHA AQUI o espectro da luz ambiente
 
     // Termo difuso utilizando a lei dos cossenos de Lambert
-    vec3 lambert_diffuse_term = Kd0*I*max(0,dot(n,l)) + Kd1*I*(1-max(0,dot(n,l))); // PREENCHA AQUI o termo difuso de Lambert
+    vec3 lambert_diffuse_term = Kd0*I*max(0,dot(n,l)); // + Kd1*I*(1-max(0,dot(n,l))); // PREENCHA AQUI o termo difuso de Lambert
 
     // Termo ambiente
     vec3 ambient_term = Ka*Ia; // PREENCHA AQUI o termo ambiente
@@ -192,8 +229,8 @@ void main()
     // Termo especular utilizando o modelo de iluminação de Phong
     vec3 phong_specular_term  = Ks*I*pow(max(0,dot(r,v)),q); // PREENCH AQUI o termo especular de Phong
 
-    
-    color.rgb = lambert_diffuse_term + ambient_term + phong_specular_term ;
+    color.rgb = lambert_diffuse_term; // + ambient_term + phong_specular_term ;
+    color.rgb = Kd0; // + ambient_term + phong_specular_term ;
     //float lambert = max(0,dot(n,l));
     //color.rgb = Kd0 * (lambert + 0.01);
     color.a = 1;
