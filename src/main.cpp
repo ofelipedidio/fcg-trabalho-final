@@ -49,7 +49,7 @@ void sphericalFirework(glm::vec4 position, Emitter::ParticleEmitter *stock, Emit
 
     for (int k = 0; k < 10; k++) {
         float size = (10.0f - k) / 20.0f;
-        stock->emitIn(position.x, position.y, position.z, 0, 0.75f * (height / stock->proprieties.duration), 0, size, k / 10.0f);
+        stock->emitIn(position.x, position.y, position.z, 0, ((height-position.y) - (stock->proprieties.ya * stock->proprieties.duration)) / stock->proprieties.duration, 0, size, k / 10.0f);
     }
 
     float speed = 1.0f;
@@ -65,7 +65,7 @@ void sphericalFirework(glm::vec4 position, Emitter::ParticleEmitter *stock, Emit
 
             for (int k = 0; k < 10; k++) {
                 float size = (10.0f - k) / 20.0f;
-                explosion->emitIn(x, y, z, xs, ys, zs, size, (stock->proprieties.duration) + (k / 10.0f));
+                explosion->emitIn(x, y, z, xs, ys, zs, size, (stock->proprieties.duration-1.9f) + (k / 10.0f));
             }
         }
     }
@@ -277,7 +277,7 @@ int main() {
 
         e1->onRender(renderer);
         e2->onRender(renderer);
-        
+
         // Overlay text
         {
             glm::mat4 model = Matrix_Identity();
@@ -289,7 +289,7 @@ int main() {
                     g_VirtualScene["axes"].num_indices,
                     GL_UNSIGNED_INT,
                     (void*)g_VirtualScene["axes"].first_index
-                    );
+            );
 
             if (!camera.isLookAt) {
                 showReticle(window);
@@ -314,29 +314,29 @@ void DrawCube(GLint render_as_black_uniform)
     // Cube
     {
         glDrawElements(
-            g_VirtualScene["cube_faces"].rendering_mode, // Veja slides 182-188 do documento Aula_04_Modelagem_Geometrica_3D.pdf
-            g_VirtualScene["cube_faces"].num_indices,    //
-            GL_UNSIGNED_INT,
-            (void *)g_VirtualScene["cube_faces"].first_index);
+                g_VirtualScene["cube_faces"].rendering_mode, // Veja slides 182-188 do documento Aula_04_Modelagem_Geometrica_3D.pdf
+                g_VirtualScene["cube_faces"].num_indices,    //
+                GL_UNSIGNED_INT,
+                (void *)g_VirtualScene["cube_faces"].first_index);
     }
     return;
     // Axes
     {
         glLineWidth(4.0f);
         glDrawElements(
-            g_VirtualScene["axes"].rendering_mode,
-            g_VirtualScene["axes"].num_indices,
-            GL_UNSIGNED_INT,
-            (void *)g_VirtualScene["axes"].first_index);
+                g_VirtualScene["axes"].rendering_mode,
+                g_VirtualScene["axes"].num_indices,
+                GL_UNSIGNED_INT,
+                (void *)g_VirtualScene["axes"].first_index);
     }
     // Edges
     {
         glUniform1i(render_as_black_uniform, true);
         glDrawElements(
-            g_VirtualScene["cube_edges"].rendering_mode,
-            g_VirtualScene["cube_edges"].num_indices,
-            GL_UNSIGNED_INT,
-            (void *)g_VirtualScene["cube_edges"].first_index);
+                g_VirtualScene["cube_edges"].rendering_mode,
+                g_VirtualScene["cube_edges"].num_indices,
+                GL_UNSIGNED_INT,
+                (void *)g_VirtualScene["cube_edges"].first_index);
     }
 }
 
@@ -383,25 +383,25 @@ GLuint BuildTriangles()
     glEnableVertexAttribArray(location);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
     GLfloat color_coefficients[] = {
-        // Cores dos vértices do cubo
-        //  R     G     B     A
-        1.0f, 0.5f, 0.0f, 1.0f, // cor do vértice 0
-        1.0f, 0.5f, 0.0f, 1.0f, // cor do vértice 1
-        0.0f, 0.5f, 1.0f, 1.0f, // cor do vértice 2
-        0.0f, 0.5f, 1.0f, 1.0f, // cor do vértice 3
-        1.0f, 0.5f, 0.0f, 1.0f, // cor do vértice 4
-        1.0f, 0.5f, 0.0f, 1.0f, // cor do vértice 5
-        0.0f, 0.5f, 1.0f, 1.0f, // cor do vértice 6
-        0.0f, 0.5f, 1.0f, 1.0f, // cor do vértice 7
-                                // Cores para desenhar o eixo X
-        1.0f, 0.0f, 0.0f, 1.0f, // cor do vértice 8
-        1.0f, 0.0f, 0.0f, 1.0f, // cor do vértice 9
-                                // Cores para desenhar o eixo Y
-        0.0f, 1.0f, 0.0f, 1.0f, // cor do vértice 10
-        0.0f, 1.0f, 0.0f, 1.0f, // cor do vértice 11
-                                // Cores para desenhar o eixo Z
-        0.0f, 0.0f, 1.0f, 1.0f, // cor do vértice 12
-        0.0f, 0.0f, 1.0f, 1.0f, // cor do vértice 13
+            // Cores dos vértices do cubo
+            //  R     G     B     A
+            1.0f, 0.5f, 0.0f, 1.0f, // cor do vértice 0
+            1.0f, 0.5f, 0.0f, 1.0f, // cor do vértice 1
+            0.0f, 0.5f, 1.0f, 1.0f, // cor do vértice 2
+            0.0f, 0.5f, 1.0f, 1.0f, // cor do vértice 3
+            1.0f, 0.5f, 0.0f, 1.0f, // cor do vértice 4
+            1.0f, 0.5f, 0.0f, 1.0f, // cor do vértice 5
+            0.0f, 0.5f, 1.0f, 1.0f, // cor do vértice 6
+            0.0f, 0.5f, 1.0f, 1.0f, // cor do vértice 7
+            // Cores para desenhar o eixo X
+            1.0f, 0.0f, 0.0f, 1.0f, // cor do vértice 8
+            1.0f, 0.0f, 0.0f, 1.0f, // cor do vértice 9
+            // Cores para desenhar o eixo Y
+            0.0f, 1.0f, 0.0f, 1.0f, // cor do vértice 10
+            0.0f, 1.0f, 0.0f, 1.0f, // cor do vértice 11
+            // Cores para desenhar o eixo Z
+            0.0f, 0.0f, 1.0f, 1.0f, // cor do vértice 12
+            0.0f, 0.0f, 1.0f, 1.0f, // cor do vértice 13
     };
     GLuint VBO_color_coefficients_id;
     glGenBuffers(1, &VBO_color_coefficients_id);
