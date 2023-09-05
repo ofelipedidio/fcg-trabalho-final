@@ -115,7 +115,7 @@ void main()
         float phi = asin(py/sphere_radius);
         U = (theta + M_PI)/(2*M_PI);
         V = (phi + M_PI_2) / M_PI;
-        Kd = texture(TextureImage11, vec2(U,V)).rgb;;
+        Kd = texture(TextureImage11, vec2(U,V)).rgb;
     }
     else if ( object_id == BUNNY )
     {
@@ -198,7 +198,12 @@ void main()
 
     vec3 ambient_term = Ka*Ia;
     vec3 phong_specular_term  = Ks*I*pow(max(0,dot(r,v)),q);
-    lambert_diffuse_term =Kd*I*max(0,dot(n,l));
+
+    if ( object_id == SPHERE ) {
+        lambert_diffuse_term =Kd*I;
+    } else {
+        lambert_diffuse_term =Kd*I*max(0, dot(n, l));
+    }
     color.rgb = lambert_diffuse_term + ambient_term + phong_specular_term;
 
     color.a = 1;

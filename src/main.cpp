@@ -100,8 +100,6 @@ void sphericalFirework(glm::vec4 position, Emitter::ParticleEmitter *stock, Emit
     }
 }
 
-void spawnParticleAt(glm::vec4 position);
-
 void onClickFloor(int button, int action, int mods, float x, float z)
 {
     glm::vec4 point = {x, 0.0f, z, 1.0f};
@@ -213,8 +211,6 @@ void ScrollCallback(GLFWwindow *window, double xoffset, double yoffset);
 // added
 void DrawCube(GLint render_as_black_uniform); // Desenha um cubo
 GLuint BuildTriangles();
-GLuint loadVertexShader(const char *filename);   // Carrega um vertex shader
-GLuint loadFragmentShader(const char *filename); // Carrega um fragment shader
 
 // Definimos uma estrutura que armazenará dados necessários para renderizar
 // cada objeto da cena virtual.
@@ -244,7 +240,7 @@ game::Camera camera;
 std::stack<glm::mat4> g_MatrixStack;
 
 // Razão de proporção da janela (largura/altura). Veja função FramebufferSizeCallback().
-float g_ScreenRatio = 1.0f;
+// float g_ScreenRatio = 1.0f;
 
 // Ângulos de Euler que controlam a rotação de um dos cubos da cena virtual
 float g_AngleX = 0.0f;
@@ -261,12 +257,12 @@ bool g_MiddleMouseButtonPressed = false; // Análogo para botão do meio do mous
 // usuário através do mouse (veja função CursorPosCallback()). A posição
 // efetiva da câmera é calculada dentro da função main(), dentro do loop de
 // renderização.
-float g_CameraTheta = 0.0f;    // Ângulo no plano ZX em relação ao eixo Z
-float g_CameraPhi = 0.0f;      // Ângulo em relação ao eixo Y
-float g_CameraDistance = 3.5f; // Distância da câmera para a origem
+// float g_CameraTheta = 0.0f;    // Ângulo no plano ZX em relação ao eixo Z
+// float g_CameraPhi = 0.0f;      // Ângulo em relação ao eixo Y
+// float g_CameraDistance = 3.5f; // Distância da câmera para a origem
 
 // Variável que controla o tipo de projeção utilizada: perspectiva ou ortográfica.
-bool g_UsePerspectiveProjection = true;
+// bool g_UsePerspectiveProjection = true;
 
 // Variável que controla se o texto informativo será mostrado na tela.
 bool g_ShowInfoText = true;
@@ -1306,8 +1302,8 @@ GLuint CreateGpuProgram(GLuint vertex_shader_id, GLuint fragment_shader_id)
     }
 
     // Os "Shader Objects" podem ser marcados para deleção após serem linkados
-    glDeleteShader(vertex_shader_id);
-    glDeleteShader(fragment_shader_id);
+    // glDeleteShader(vertex_shader_id);
+    // glDeleteShader(fragment_shader_id);
 
     // Retornamos o ID gerado acima
     return program_id;
@@ -1331,7 +1327,11 @@ void FramebufferSizeCallback(GLFWwindow *window, int width, int height)
     //
     // O cast para float é necessário pois números inteiros são arredondados ao
     // serem divididos!
-    g_ScreenRatio = (float)width / height;
+    // g_ScreenRatio = (float)width / height;
+    // added
+    camera.screenRatio = ((float)width) / ((float)height);
+    camera.width = (float)width;
+    camera.height = (float)height;
 }
 
 // Variáveis globais que armazenam a última posição do cursor do mouse, para
@@ -1340,7 +1340,7 @@ void FramebufferSizeCallback(GLFWwindow *window, int width, int height)
 double g_LastCursorPosX, g_LastCursorPosY;
 
 // Função callback chamada sempre que o usuário aperta algum dos botões do mouse
-void MouseButtonCallback(GLFWwindow *window, int button, int action, int mods)
+/*void MouseButtonCallback(GLFWwindow *window, int button, int action, int mods)
 {
     if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
     {
@@ -1390,11 +1390,50 @@ void MouseButtonCallback(GLFWwindow *window, int button, int action, int mods)
         // variável abaixo para false.
         g_MiddleMouseButtonPressed = false;
     }
+}*/
+void MouseButtonCallback(GLFWwindow *window, int button, int action, int mods)
+{
+    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
+    {
+        glfwGetCursorPos(window, &g_LastCursorPosX, &g_LastCursorPosY);
+        g_LeftMouseButtonPressed = true;
+    }
+    else if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE)
+    {
+        g_LeftMouseButtonPressed = false;
+    }
+    else if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS)
+    {
+        glfwGetCursorPos(window, &g_LastCursorPosX, &g_LastCursorPosY);
+        g_RightMouseButtonPressed = true;
+
+        // Intersect view with floor
+        collision::Plane floor = {{0, 0, 0}, {0, 1, 0}};
+        collision::Ray ray = {
+            {camera.position.x, camera.position.y, camera.position.z},
+            {camera.viewVector.x, camera.viewVector.y, camera.viewVector.z}};
+        float time = collision::collide(floor, ray);
+        collision::Point p = ray.at(time);
+        onClickFloor(button, action, mods, p.x, p.z);
+    }
+    else if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_RELEASE)
+    {
+        g_RightMouseButtonPressed = false;
+    }
+    else if (button == GLFW_MOUSE_BUTTON_MIDDLE && action == GLFW_PRESS)
+    {
+        glfwGetCursorPos(window, &g_LastCursorPosX, &g_LastCursorPosY);
+        g_MiddleMouseButtonPressed = true;
+    }
+    else if (button == GLFW_MOUSE_BUTTON_MIDDLE && action == GLFW_RELEASE)
+    {
+        g_MiddleMouseButtonPressed = false;
+    }
 }
 
 // Função callback chamada sempre que o usuário movimentar o cursor do mouse em
 // cima da janela OpenGL.
-void CursorPosCallback(GLFWwindow *window, double xpos, double ypos)
+/*void CursorPosCallback(GLFWwindow *window, double xpos, double ypos)
 {
     // Abaixo executamos o seguinte: caso o botão esquerdo do mouse esteja
     // pressionado, computamos quanto que o mouse se movimento desde o último
@@ -1444,10 +1483,39 @@ void CursorPosCallback(GLFWwindow *window, double xpos, double ypos)
         g_LastCursorPosX = xpos;
         g_LastCursorPosY = ypos;
     }
+}*/
+void CursorPosCallback(GLFWwindow *window, double xpos, double ypos)
+{
+    float dx = xpos - g_LastCursorPosX;
+    float dy = ypos - g_LastCursorPosY;
+    if (g_LeftMouseButtonPressed)
+    {
+        // Atualizamos parâmetros da câmera com os deslocamentos
+        camera.theta -= 0.002f * dx;
+        camera.phi += 0.002f * dy;
+        // Em coordenadas esféricas, o ângulo phi deve ficar entre -pi/2 e +pi/2.
+        float phimax = 3.141592f / 2;
+        float phimin = -phimax;
+        if (camera.phi > phimax)
+            camera.phi = phimax;
+        if (camera.phi < phimin)
+            camera.phi = phimin;
+        // Atualizamos as variáveis globais para armazenar a posição atual do
+        // cursor como sendo a última posição conhecida do cursor.
+        g_LastCursorPosX = xpos;
+        g_LastCursorPosY = ypos;
+    }
+    if (g_RightMouseButtonPressed)
+    {
+        // Deslocamento do cursor do mouse em x e y de coordenadas de tela!
+    }
+    if (g_MiddleMouseButtonPressed)
+    {
+    }
 }
 
 // Função callback chamada sempre que o usuário movimenta a "rodinha" do mouse.
-void ScrollCallback(GLFWwindow *window, double xoffset, double yoffset)
+/*void ScrollCallback(GLFWwindow *window, double xoffset, double yoffset)
 {
     // Atualizamos a distância da câmera para a origem utilizando a
     // movimentação da "rodinha", simulando um ZOOM.
@@ -1461,11 +1529,26 @@ void ScrollCallback(GLFWwindow *window, double xoffset, double yoffset)
     const float verysmallnumber = std::numeric_limits<float>::epsilon();
     if (g_CameraDistance < verysmallnumber)
         g_CameraDistance = verysmallnumber;
+}*/
+void ScrollCallback(GLFWwindow *window, double xoffset, double yoffset)
+{
+    camera.distance -= 1.0f * yoffset;
+    const float verySmallNumber = std::numeric_limits<float>::epsilon();
+    if (camera.distance < verySmallNumber)
+    {
+        camera.distance = verySmallNumber;
+    }
 }
-
+RenderObject renderObjectOf(const char *object_id)
+{
+    return {
+        (void *)g_VirtualFireworks[object_id].first_index,
+        g_VirtualFireworks[object_id].num_indices,
+        g_VirtualFireworks[object_id].rendering_mode};
+}
 // Definição da função que será chamada sempre que o usuário pressionar alguma
 // tecla do teclado. Veja http://www.glfw.org/docs/latest/input_guide.html#input_key
-void KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mod)
+/*void KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mod)
 {
     // ==================
     // Não modifique este loop! Ele é utilizando para correção automatizada dos
@@ -1535,6 +1618,93 @@ void KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mod)
         LoadShadersFromFiles();
         fprintf(stdout, "Shaders recarregados!\n");
         fflush(stdout);
+    }
+}*/
+void KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mod)
+{
+    for (int i = 0; i < 10; ++i)
+        if (key == GLFW_KEY_0 + i && action == GLFW_PRESS && mod == GLFW_MOD_SHIFT)
+            std::exit(100 + i);
+    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+    {
+        glfwSetWindowShouldClose(window, GL_TRUE);
+    }
+    else if (key == GLFW_KEY_P && action == GLFW_PRESS)
+    {
+        camera.usePerspectiveProjection = true;
+    }
+    else if (key == GLFW_KEY_O && action == GLFW_PRESS)
+    {
+        camera.usePerspectiveProjection = false;
+    }
+    else if (key == GLFW_KEY_H && action == GLFW_PRESS)
+    {
+        g_ShowInfoText = !g_ShowInfoText;
+    }
+    else if (key == GLFW_KEY_F && action == GLFW_PRESS)
+    {
+        sphericalFirework(glm::vec4(0, 0, 0, 1), e2, e1);
+    }
+    else if (key == GLFW_KEY_A && action == GLFW_PRESS)
+    {
+        camera.movement.decX = true;
+    }
+    else if (key == GLFW_KEY_A && action == GLFW_RELEASE)
+    {
+        camera.movement.decX = false;
+    }
+    else if (key == GLFW_KEY_D && action == GLFW_PRESS)
+    {
+        camera.movement.incX = true;
+    }
+    else if (key == GLFW_KEY_D && action == GLFW_RELEASE)
+    {
+        camera.movement.incX = false;
+    }
+    else if (key == GLFW_KEY_S && action == GLFW_PRESS)
+    {
+        camera.movement.decY = true;
+    }
+    else if (key == GLFW_KEY_S && action == GLFW_RELEASE)
+    {
+        camera.movement.decY = false;
+    }
+    else if (key == GLFW_KEY_W && action == GLFW_PRESS)
+    {
+        camera.movement.incY = true;
+    }
+    else if (key == GLFW_KEY_W && action == GLFW_RELEASE)
+    {
+        camera.movement.incY = false;
+    }
+    else if (key == GLFW_KEY_SPACE && action == GLFW_PRESS)
+    {
+        camera.movement.incZ = true;
+    }
+    else if (key == GLFW_KEY_SPACE && action == GLFW_RELEASE)
+    {
+        camera.movement.incZ = false;
+    }
+    else if (key == GLFW_KEY_LEFT_SHIFT && action == GLFW_PRESS)
+    {
+        camera.movement.decZ = true;
+    }
+    else if (key == GLFW_KEY_LEFT_SHIFT && action == GLFW_RELEASE)
+    {
+        camera.movement.decZ = false;
+    }
+    else if (key == GLFW_KEY_Q && action == GLFW_PRESS)
+    {
+        camera.isLookAt ^= true;
+    }
+    else if (key == GLFW_KEY_B && action == GLFW_PRESS)
+    {
+        camera.bezierTime = 0.0f;
+        camera.bezierDuration = 4.0f;
+        camera.bezierCurve.p0 = glm::vec4(10.0f, 50.0f, 10.0f, 1.0f);
+        camera.bezierCurve.p1 = glm::vec4(0.0f, 0.0f, 20.0f, 1.0f);
+        camera.bezierCurve.p2 = glm::vec4(00.0f, -20.0f, -30.0f, 1.0f);
+        camera.bezierCurve.p3 = glm::vec4(-50.0f, 10.0f, -0.0f, 1.0f);
     }
 }
 
@@ -1620,7 +1790,7 @@ void TextRendering_ShowEulerAngles(GLFWwindow *window)
 }
 
 // Escrevemos na tela qual matriz de projeção está sendo utilizada.
-void TextRendering_ShowProjection(GLFWwindow *window)
+/*void TextRendering_ShowProjection(GLFWwindow *window)
 {
     if (!g_ShowInfoText)
         return;
@@ -1629,6 +1799,19 @@ void TextRendering_ShowProjection(GLFWwindow *window)
     float charwidth = TextRendering_CharWidth(window);
 
     if (g_UsePerspectiveProjection)
+        TextRendering_PrintString(window, "Perspective", 1.0f - 13 * charwidth, -1.0f + 2 * lineheight / 10, 1.0f);
+    else
+        TextRendering_PrintString(window, "Orthographic", 1.0f - 13 * charwidth, -1.0f + 2 * lineheight / 10, 1.0f);
+}*/
+void TextRendering_ShowProjection(GLFWwindow *window)
+{
+    if (!g_ShowInfoText)
+        return;
+
+    float lineheight = TextRendering_LineHeight(window);
+    float charwidth = TextRendering_CharWidth(window);
+
+    if (camera.usePerspectiveProjection)
         TextRendering_PrintString(window, "Perspective", 1.0f - 13 * charwidth, -1.0f + 2 * lineheight / 10, 1.0f);
     else
         TextRendering_PrintString(window, "Orthographic", 1.0f - 13 * charwidth, -1.0f + 2 * lineheight / 10, 1.0f);
@@ -2040,20 +2223,6 @@ GLuint BuildTriangles()
     // Retornamos o ID do VAO. Isso é tudo que será necessário para renderizar
     // os triângulos definidos acima. Veja a chamada glDrawElements() em main().
     return vertex_array_object_idFireworks;
-}
-
-GLuint loadVertexShader(const char *filename)
-{
-    GLuint vertex_shader_id = glCreateShader(GL_VERTEX_SHADER);
-    LoadShader(filename, vertex_shader_id);
-    return vertex_shader_id;
-}
-
-GLuint loadFragmentShader(const char *filename)
-{
-    GLuint fragment_shader_id = glCreateShader(GL_FRAGMENT_SHADER);
-    LoadShader(filename, fragment_shader_id);
-    return fragment_shader_id;
 }
 
 // Escrevemos na tela o número de quadros renderizados por segundo (frames per
