@@ -491,9 +491,9 @@ int main(int argc, char *argv[])
     ComputeNormals(&ferrisbmodel);
     BuildTrianglesAndAddToVirtualScene(&ferrisbmodel);
 
-    ObjModel acaciamodel("../data/acacia tree vol 15_OBJ.obj");
-    ComputeNormals(&acaciamodel);
-    BuildTrianglesAndAddToVirtualScene(&acaciamodel);
+    //ObjModel acaciamodel("../data/acacia tree vol 15_OBJ.obj");
+    //ComputeNormals(&acaciamodel);
+    //BuildTrianglesAndAddToVirtualScene(&acaciamodel);
 
     if (argc > 1)
     {
@@ -1342,52 +1342,37 @@ double g_LastCursorPosX, g_LastCursorPosY;
 // Função callback chamada sempre que o usuário aperta algum dos botões do mouse
 void MouseButtonCallback(GLFWwindow *window, int button, int action, int mods)
 {
-    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
-    {
-        // Se o usuário pressionou o botão esquerdo do mouse, guardamos a
-        // posição atual do cursor nas variáveis g_LastCursorPosX e
-        // g_LastCursorPosY.  Também, setamos a variável
-        // g_LeftMouseButtonPressed como true, para saber que o usuário está
-        // com o botão esquerdo pressionado.
+    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
         glfwGetCursorPos(window, &g_LastCursorPosX, &g_LastCursorPosY);
         g_LeftMouseButtonPressed = true;
-    }
-    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE)
-    {
-        // Quando o usuário soltar o botão esquerdo do mouse, atualizamos a
-        // variável abaixo para false.
+
+    } else if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_RELEASE) {
         g_LeftMouseButtonPressed = false;
     }
-    if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS)
+    else if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS)
     {
-        // Se o usuário pressionou o botão esquerdo do mouse, guardamos a
-        // posição atual do cursor nas variáveis g_LastCursorPosX e
-        // g_LastCursorPosY.  Também, setamos a variável
-        // g_RightMouseButtonPressed como true, para saber que o usuário está
-        // com o botão esquerdo pressionado.
         glfwGetCursorPos(window, &g_LastCursorPosX, &g_LastCursorPosY);
         g_RightMouseButtonPressed = true;
-    }
-    if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_RELEASE)
-    {
-        // Quando o usuário soltar o botão esquerdo do mouse, atualizamos a
-        // variável abaixo para false.
+
+        // Intersect view with floor
+        collision::Plane floor = {{0, 0 ,0}, {0, 1, 0}};
+        collision::Ray ray = {
+                {camera.position.x, camera.position.y, camera.position.z},
+                {camera.viewVector.x, camera.viewVector.y, camera.viewVector.z}
+        };
+        float time = collision::collide(floor, ray);
+        collision::Point p = ray.at(time);
+        onClickFloor(button, action, mods, p.x, p.z);
+    } else if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_RELEASE) {
         g_RightMouseButtonPressed = false;
     }
-    if (button == GLFW_MOUSE_BUTTON_MIDDLE && action == GLFW_PRESS)
+    else if (button == GLFW_MOUSE_BUTTON_MIDDLE && action == GLFW_PRESS)
     {
-        // Se o usuário pressionou o botão esquerdo do mouse, guardamos a
-        // posição atual do cursor nas variáveis g_LastCursorPosX e
-        // g_LastCursorPosY.  Também, setamos a variável
-        // g_MiddleMouseButtonPressed como true, para saber que o usuário está
-        // com o botão esquerdo pressionado.
         glfwGetCursorPos(window, &g_LastCursorPosX, &g_LastCursorPosY);
         g_MiddleMouseButtonPressed = true;
     }
-    if (button == GLFW_MOUSE_BUTTON_MIDDLE && action == GLFW_RELEASE)
+    else if (button == GLFW_MOUSE_BUTTON_MIDDLE && action == GLFW_RELEASE)
     {
-        // Quando o usuário soltar o botão esquerdo do mouse, atualizamos a
-        // variável abaixo para false.
         g_MiddleMouseButtonPressed = false;
     }
 }
@@ -1396,53 +1381,31 @@ void MouseButtonCallback(GLFWwindow *window, int button, int action, int mods)
 // cima da janela OpenGL.
 void CursorPosCallback(GLFWwindow *window, double xpos, double ypos)
 {
-    // Abaixo executamos o seguinte: caso o botão esquerdo do mouse esteja
-    // pressionado, computamos quanto que o mouse se movimento desde o último
-    // instante de tempo, e usamos esta movimentação para atualizar os
-    // parâmetros que definem a posição da câmera dentro da cena virtual.
-    // Assim, temos que o usuário consegue controlar a câmera.
-
+    float dx = xpos - g_LastCursorPosX;
+    float dy = ypos - g_LastCursorPosY;
     if (g_LeftMouseButtonPressed)
     {
-        // Deslocamento do cursor do mouse em x e y de coordenadas de tela!
-        float dx = xpos - g_LastCursorPosX;
-        float dy = ypos - g_LastCursorPosY;
-
         // Atualizamos parâmetros da câmera com os deslocamentos
-        g_CameraTheta -= 0.01f * dx;
-        g_CameraPhi += 0.01f * dy;
-
+        camera.theta -= 0.002f*dx;
+        camera.phi   += 0.002f*dy;
         // Em coordenadas esféricas, o ângulo phi deve ficar entre -pi/2 e +pi/2.
         float phimax = 3.141592f / 2;
         float phimin = -phimax;
-
-        if (g_CameraPhi > phimax)
-            g_CameraPhi = phimax;
-
-        if (g_CameraPhi < phimin)
-            g_CameraPhi = phimin;
-
+        if (camera.phi > phimax)
+            camera.phi = phimax;
+        if (camera.phi < phimin)
+            camera.phi = phimin;
         // Atualizamos as variáveis globais para armazenar a posição atual do
         // cursor como sendo a última posição conhecida do cursor.
         g_LastCursorPosX = xpos;
         g_LastCursorPosY = ypos;
     }
-
     if (g_RightMouseButtonPressed)
     {
-
-        // Atualizamos as variáveis globais para armazenar a posição atual do
-        // cursor como sendo a última posição conhecida do cursor.
-        g_LastCursorPosX = xpos;
-        g_LastCursorPosY = ypos;
+        // Deslocamento do cursor do mouse em x e y de coordenadas de tela!
     }
-
     if (g_MiddleMouseButtonPressed)
     {
-        // Atualizamos as variáveis globais para armazenar a posição atual do
-        // cursor como sendo a última posição conhecida do cursor.
-        g_LastCursorPosX = xpos;
-        g_LastCursorPosY = ypos;
     }
 }
 
@@ -1475,10 +1438,6 @@ void KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mod)
             std::exit(100 + i);
     // ==================
 
-    // Se o usuário pressionar a tecla ESC, fechamos a janela.
-    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
-        glfwSetWindowShouldClose(window, GL_TRUE);
-
     // O código abaixo implementa a seguinte lógica:
     //   Se apertar tecla X       então g_AngleX += delta;
     //   Se apertar tecla shift+X então g_AngleX -= delta;
@@ -1487,54 +1446,55 @@ void KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mod)
     //   Se apertar tecla Z       então g_AngleZ += delta;
     //   Se apertar tecla shift+Z então g_AngleZ -= delta;
 
-    float delta = 3.141592 / 16; // 22.5 graus, em radianos.
-
-    if (key == GLFW_KEY_X && action == GLFW_PRESS)
-    {
-        g_AngleX += (mod & GLFW_MOD_SHIFT) ? -delta : delta;
-    }
-
-    if (key == GLFW_KEY_Y && action == GLFW_PRESS)
-    {
-        g_AngleY += (mod & GLFW_MOD_SHIFT) ? -delta : delta;
-    }
-    if (key == GLFW_KEY_Z && action == GLFW_PRESS)
-    {
-        g_AngleZ += (mod & GLFW_MOD_SHIFT) ? -delta : delta;
-    }
-
-    // Se o usuário apertar a tecla espaço, resetamos os ângulos de Euler para zero.
-    if (key == GLFW_KEY_SPACE && action == GLFW_PRESS)
-    {
-        g_AngleX = 0.0f;
-        g_AngleY = 0.0f;
-        g_AngleZ = 0.0f;
-    }
-
-    // Se o usuário apertar a tecla P, utilizamos projeção perspectiva.
-    if (key == GLFW_KEY_P && action == GLFW_PRESS)
-    {
-        g_UsePerspectiveProjection = true;
-    }
-
-    // Se o usuário apertar a tecla O, utilizamos projeção ortográfica.
-    if (key == GLFW_KEY_O && action == GLFW_PRESS)
-    {
-        g_UsePerspectiveProjection = false;
-    }
-
     // Se o usuário apertar a tecla H, fazemos um "toggle" do texto informativo mostrado na tela.
     if (key == GLFW_KEY_H && action == GLFW_PRESS)
     {
         g_ShowInfoText = !g_ShowInfoText;
     }
 
-    // Se o usuário apertar a tecla R, recarregamos os shaders dos arquivos "shader_fragment.glsl" e "shader_vertex.glsl".
-    if (key == GLFW_KEY_R && action == GLFW_PRESS)
-    {
-        LoadShadersFromFiles();
-        fprintf(stdout, "Shaders recarregados!\n");
-        fflush(stdout);
+    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
+        glfwSetWindowShouldClose(window, GL_TRUE);
+    } else if (key == GLFW_KEY_P && action == GLFW_PRESS) {
+        camera.usePerspectiveProjection = true;
+    } else if (key == GLFW_KEY_O && action == GLFW_PRESS) {
+        camera.usePerspectiveProjection = false;
+    } else if (key == GLFW_KEY_H && action == GLFW_PRESS) {
+        g_ShowInfoText = !g_ShowInfoText;
+    } else if (key == GLFW_KEY_F && action == GLFW_PRESS) {
+        sphericalFirework(glm::vec4(0, 0, 0, 1), e2, e1);
+    } else if (key == GLFW_KEY_A && action == GLFW_PRESS) {
+        camera.movement.decX = true;
+    } else if (key == GLFW_KEY_A && action == GLFW_RELEASE) {
+        camera.movement.decX = false;
+    } else if (key == GLFW_KEY_D && action == GLFW_PRESS) {
+        camera.movement.incX = true;
+    } else if (key == GLFW_KEY_D && action == GLFW_RELEASE) {
+        camera.movement.incX = false;
+    } else if (key == GLFW_KEY_S && action == GLFW_PRESS) {
+        camera.movement.decY = true;
+    } else if (key == GLFW_KEY_S && action == GLFW_RELEASE) {
+        camera.movement.decY = false;
+    } else if (key == GLFW_KEY_W && action == GLFW_PRESS) {
+        camera.movement.incY = true;
+    } else if (key == GLFW_KEY_W && action == GLFW_RELEASE) {
+        camera.movement.incY = false;
+    } else if (key == GLFW_KEY_SPACE && action == GLFW_PRESS) {
+        camera.movement.incZ = true;
+    } else if (key == GLFW_KEY_SPACE && action == GLFW_RELEASE) {
+        camera.movement.incZ = false;
+    } else if (key == GLFW_KEY_LEFT_SHIFT && action == GLFW_PRESS) {
+        camera.movement.decZ = true;
+    } else if (key == GLFW_KEY_LEFT_SHIFT && action == GLFW_RELEASE) {
+        camera.movement.decZ = false;
+    } else if (key == GLFW_KEY_Q && action == GLFW_PRESS) {
+        camera.isLookAt ^= true;
+    } else if (key == GLFW_KEY_B && action == GLFW_PRESS) {
+        camera.bezierTime = 0.0f;
+        camera.bezierDuration = 4.0f;
+        camera.bezierCurve.p0 = glm::vec4(10.0f, 50.0f, 10.0f, 1.0f);
+        camera.bezierCurve.p1 = glm::vec4(0.0f, 0.0f, 20.0f, 1.0f);
+        camera.bezierCurve.p2 = glm::vec4(00.0f, -10.0f, -30.0f, 1.0f);
+        camera.bezierCurve.p3 = glm::vec4(-50.0f, 10.0f, -0.0f, 1.0f);
     }
 }
 
