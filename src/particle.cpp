@@ -1,6 +1,5 @@
 #include "particle.h"
 #include "matrices.h"
-#include <iostream>
 
 namespace Particle
 {

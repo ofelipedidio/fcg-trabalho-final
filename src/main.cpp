@@ -30,6 +30,10 @@
 #include <stdexcept>
 #include <algorithm>
 
+// added
+#include <iostream>
+#include <ostream>
+
 // Headers das bibliotecas OpenGL
 #include <glad/glad.h>  // Criação de contexto OpenGL 3.3
 #include <GLFW/glfw3.h> // Criação de janelas do sistema operacional
@@ -47,6 +51,64 @@
 // Headers locais, definidos na pasta "include/"
 #include "utils.h"
 #include "matrices.h"
+
+// added
+#include "renderer.h"
+#include "collisions.h"
+#include "emitter.h"
+#include "camera.h"
+#include "random.h"
+#define print_vec4(v) "(" << v.x << ", " << v.y << ", " << v.z << ", " << v.w << ")"
+#define debug_var(var) std::cout << #var " = " << var << std::endl;
+Emitter::ParticleEmitter *e1;
+Emitter::ParticleEmitter *e2;
+
+// added fireworks functions
+void sphericalFirework(glm::vec4 position, Emitter::ParticleEmitter *stock, Emitter::ParticleEmitter *explosion)
+{
+#define PI 3.141592
+#define SIDES 7
+#define VSIDES 7
+
+    float height = 10.0f;
+
+    for (int k = 0; k < 10; k++)
+    {
+        float size = (10.0f - k) / 20.0f;
+        stock->emitIn(position.x, position.y, position.z, 0, ((height - position.y) - (stock->proprieties.ya * stock->proprieties.duration)) / stock->proprieties.duration, 0, size, k / 10.0f);
+    }
+
+    float speed = 1.0f;
+    float r = speed;
+    for (float i = 0.0f; i < 2.0f * PI; i += (2.0f * PI) / SIDES)
+    {
+        for (float j = -PI / 2.0f; j < PI * 2.0f; j += PI / VSIDES)
+        {
+            float xs = r * cos(i) * sin(j);
+            float ys = r * sin(i) + 1.0f;
+            float zs = r * cos(i) * cos(j);
+            float x = position.x;
+            float y = position.y + height;
+            float z = position.z;
+
+            for (int k = 0; k < 10; k++)
+            {
+                float size = (10.0f - k) / 20.0f;
+                explosion->emitIn(x, y, z, xs, ys, zs, size, (stock->proprieties.duration - 1.9f) + (k / 10.0f));
+            }
+        }
+    }
+}
+
+void spawnParticleAt(glm::vec4 position);
+
+void onClickFloor(int button, int action, int mods, float x, float z)
+{
+    glm::vec4 point = {x, 0.0f, z, 1.0f};
+    sphericalFirework(point, e2, e1);
+}
+
+void showReticle(GLFWwindow *window);
 
 // Estrutura que representa um modelo geométrico carregado a partir de um
 // arquivo ".obj". Veja https://en.wikipedia.org/wiki/Wavefront_.obj_file .
@@ -106,10 +168,6 @@ struct ObjModel
     }
 };
 
-// Declaração de funções utilizadas para pilha de matrizes de modelagem.
-void PushMatrix(glm::mat4 M);
-void PopMatrix(glm::mat4 &M);
-
 // Declaração de várias funções utilizadas em main().  Essas estão definidas
 // logo após a definição de main() neste arquivo.
 void BuildTrianglesAndAddToVirtualScene(ObjModel *);                         // Constrói representação de um ObjModel como malha de triângulos para renderização
@@ -129,6 +187,7 @@ void TextRendering_Init();
 float TextRendering_LineHeight(GLFWwindow *window);
 float TextRendering_CharWidth(GLFWwindow *window);
 void TextRendering_PrintString(GLFWwindow *window, const std::string &str, float x, float y, float scale = 1.0f);
+
 void TextRendering_PrintMatrix(GLFWwindow *window, glm::mat4 M, float x, float y, float scale = 1.0f);
 void TextRendering_PrintVector(GLFWwindow *window, glm::vec4 v, float x, float y, float scale = 1.0f);
 void TextRendering_PrintMatrixVectorProduct(GLFWwindow *window, glm::mat4 M, glm::vec4 v, float x, float y, float scale = 1.0f);
@@ -151,6 +210,12 @@ void MouseButtonCallback(GLFWwindow *window, int button, int action, int mods);
 void CursorPosCallback(GLFWwindow *window, double xpos, double ypos);
 void ScrollCallback(GLFWwindow *window, double xoffset, double yoffset);
 
+// added
+void DrawCube(GLint render_as_black_uniform); // Desenha um cubo
+GLuint BuildTriangles();
+GLuint loadVertexShader(const char *filename);   // Carrega um vertex shader
+GLuint loadFragmentShader(const char *filename); // Carrega um fragment shader
+
 // Definimos uma estrutura que armazenará dados necessários para renderizar
 // cada objeto da cena virtual.
 struct SceneObject
@@ -171,6 +236,9 @@ struct SceneObject
 // objetos dentro da variável g_VirtualScene, e veja na função main() como
 // estes são acessados.
 std::map<std::string, SceneObject> g_VirtualScene;
+// added
+std::map<const char *, SceneObject> g_VirtualFireworks;
+game::Camera camera;
 
 // Pilha que guardará as matrizes de modelagem.
 std::stack<glm::mat4> g_MatrixStack;
@@ -197,14 +265,6 @@ float g_CameraTheta = 0.0f;    // Ângulo no plano ZX em relação ao eixo Z
 float g_CameraPhi = 0.0f;      // Ângulo em relação ao eixo Y
 float g_CameraDistance = 3.5f; // Distância da câmera para a origem
 
-// Variáveis que controlam rotação do antebraço
-float g_ForearmAngleZ = 0.0f;
-float g_ForearmAngleX = 0.0f;
-
-// Variáveis que controlam translação do torso
-float g_TorsoPositionX = 0.0f;
-float g_TorsoPositionY = 0.0f;
-
 // Variável que controla o tipo de projeção utilizada: perspectiva ou ortográfica.
 bool g_UsePerspectiveProjection = true;
 
@@ -220,11 +280,100 @@ GLint g_object_id_uniform;
 GLint g_bbox_min_uniform;
 GLint g_bbox_max_uniform;
 
+// added - try to use the others above too
+GLint model_uniform;           // Variável da matriz "model"
+GLint view_uniform;            // Variável da matriz "view" em shader_vertex.glsl
+GLint projection_uniform;      // Variável da matriz "projection" em shader_vertex.glsl
+GLint render_as_black_uniform; // Variável booleana em shader_vertex.glsl
+
 // Número de texturas carregadas pela função LoadTextureImage()
 GLuint g_NumLoadedTextures = 0;
 
+GLFWwindow *setup()
+{
+    // Inicializamos a biblioteca GLFW, utilizada para criar uma janela do
+    // sistema operacional, onde poderemos renderizar com OpenGL.
+    int success = glfwInit();
+    if (!success)
+    {
+        fprintf(stderr, "ERROR: glfwInit() failed.\n");
+        std::exit(EXIT_FAILURE);
+    }
+
+    // Definimos o callback para impressão de erros da GLFW no terminal
+    glfwSetErrorCallback(ErrorCallback);
+
+    // Pedimos para utilizar OpenGL versão 3.3 (ou superior)
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+
+#ifdef __APPLE__
+    glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
+#endif
+
+    // Pedimos para utilizar o perfil "core", isto é, utilizaremos somente as
+    // funções modernas de OpenGL.
+    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+
+    // Criamos uma janela do sistema operacional, com 800 colunas e 600 linhas
+    // de pixels, e com título "INF01047 ...".
+    GLFWwindow *window;
+    window = glfwCreateWindow(800, 600, "INF01047 - Seu Cartao - Seu Nome", NULL, NULL);
+    if (!window)
+    {
+        glfwTerminate();
+        fprintf(stderr, "ERROR: glfwCreateWindow() failed.\n");
+        std::exit(EXIT_FAILURE);
+    }
+
+    // Definimos a função de callback que será chamada sempre que o usuário
+    // pressionar alguma tecla do teclado ...
+    glfwSetKeyCallback(window, KeyCallback);
+    // ... ou clicar os botões do mouse ...
+    glfwSetMouseButtonCallback(window, MouseButtonCallback);
+    // ... ou movimentar o cursor do mouse em cima da janela ...
+    glfwSetCursorPosCallback(window, CursorPosCallback);
+    // ... ou rolar a "rodinha" do mouse.
+    glfwSetScrollCallback(window, ScrollCallback);
+
+    // Indicamos que as chamadas OpenGL deverão renderizar nesta janela
+    glfwMakeContextCurrent(window);
+
+    // Definimos a função de callback que será chamada sempre que a janela for
+    // redimensionada, por consequência alterando o tamanho do "framebuffer"
+    // (região de memória onde são armazenados os pixels da imagem).
+    glfwSetFramebufferSizeCallback(window, FramebufferSizeCallback);
+    FramebufferSizeCallback(window, 800, 600); // Forçamos a chamada do callback acima, para definir g_ScreenRatio.
+
+    return window;
+}
+
+void displaySystemInfo()
+{
+    // Carregamento de todas funções definidas por OpenGL 3.3, utilizando a
+    // biblioteca GLAD.
+    gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
+
+    // Imprimimos no terminal informações sobre a GPU do sistema
+    const GLubyte *vendor = glGetString(GL_VENDOR);
+    const GLubyte *renderer = glGetString(GL_RENDERER);
+    const GLubyte *glversion = glGetString(GL_VERSION);
+    const GLubyte *glslversion = glGetString(GL_SHADING_LANGUAGE_VERSION);
+
+    printf("GPU: %s, %s, OpenGL %s, GLSL %s\n", vendor, renderer, glversion, glslversion);
+}
+
 int main(int argc, char *argv[])
 {
+
+    // added
+    camera.usePerspectiveProjection = true;
+    camera.phi = 0.0f;
+    camera.theta = 0.0f;
+    camera.distance = 50.0f;
+    camera.field_of_view = 3.141592f / 3.0f;
+    camera.nearPlane = -0.1f;
+    camera.farPlane = -100000.0f;
     // Inicializamos a biblioteca GLFW, utilizada para criar uma janela do
     // sistema operacional, onde poderemos renderizar com OpenGL.
     int success = glfwInit();
@@ -352,8 +501,17 @@ int main(int argc, char *argv[])
         BuildTrianglesAndAddToVirtualScene(&model);
     }
 
+    // added
+    GLuint vertex_array_object_idFireworks = BuildTriangles();
+
     // Inicializamos o código para renderização de texto.
     TextRendering_Init();
+
+    // added
+    model_uniform = glGetUniformLocation(g_GpuProgramID, "model");                     // Variável da matriz "model"
+    view_uniform = glGetUniformLocation(g_GpuProgramID, "view");                       // Variável da matriz "view" em shader_vertex.glsl
+    projection_uniform = glGetUniformLocation(g_GpuProgramID, "projection");           // Variável da matriz "projection" em shader_vertex.glsl
+    render_as_black_uniform = glGetUniformLocation(g_GpuProgramID, "render_as_black"); // Variável booleana em shader_vertex.glsl
 
     // Habilitamos o Z-buffer. Veja slides 104-116 do documento Aula_09_Projecoes.pdf.
     glEnable(GL_DEPTH_TEST);
@@ -363,16 +521,36 @@ int main(int argc, char *argv[])
     glCullFace(GL_BACK);
     glFrontFace(GL_CCW);
 
+    // added
+    float previousTime = glfwGetTime();
+    Random::Init();
+
+    Emitter::ParticleProprieties emitterProprieties;
+    emitterProprieties.xa = 0.0f;
+    emitterProprieties.ya = -1.0f;
+    emitterProprieties.za = 0.0f;
+    emitterProprieties.rotationSpeedX = 0.0f;
+    emitterProprieties.rotationSpeedY = 0.0f;
+    emitterProprieties.rotationSpeedZ = 0.0f;
+    emitterProprieties.initialSize = 1.0f;
+    emitterProprieties.finalSize = 0.0f;
+    emitterProprieties.duration = 4.0f;
+    RenderObject ro((void *)g_VirtualFireworks["cube_faces"].first_index, g_VirtualFireworks["cube_faces"].num_indices, g_VirtualFireworks["cube_faces"].rendering_mode);
+    emitterProprieties.object = ro;
+
+    e1 = new Emitter::ParticleEmitter(10000, emitterProprieties);
+
+    emitterProprieties.finalSize = 0.5f;
+    e2 = new Emitter::ParticleEmitter(10000, emitterProprieties);
+
     // Ficamos em um loop infinito, renderizando, até que o usuário feche a janela
     while (!glfwWindowShouldClose(window))
     {
-        // Aqui executamos as operações de renderização
+        // added
+        double currentTime = glfwGetTime();
+        float dt = currentTime - previousTime;
+        previousTime = currentTime;
 
-        // Definimos a cor do "fundo" do framebuffer como branco.  Tal cor é
-        // definida como coeficientes RGBA: Red, Green, Blue, Alpha; isto é:
-        // Vermelho, Verde, Azul, Alpha (valor de transparência).
-        // Conversaremos sobre sistemas de cores nas aulas de Modelos de Iluminação.
-        //
         //           R     G     B     A
         glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
 
@@ -384,54 +562,74 @@ int main(int argc, char *argv[])
         // os shaders de vértice e fragmentos).
         glUseProgram(g_GpuProgramID);
 
-        // Computamos a posição da câmera utilizando coordenadas esféricas.  As
-        // variáveis g_CameraDistance, g_CameraPhi, e g_CameraTheta são
-        // controladas pelo mouse do usuário. Veja as funções CursorPosCallback()
-        // e ScrollCallback().
-        float r = g_CameraDistance;
-        float y = r * sin(g_CameraPhi);
-        float z = r * cos(g_CameraPhi) * cos(g_CameraTheta);
-        float x = r * cos(g_CameraPhi) * sin(g_CameraTheta);
+        // added
+        // Usar objeto (cubo)
+        glBindVertexArray(vertex_array_object_idFireworks);
 
-        // Abaixo definimos as varáveis que efetivamente definem a câmera virtual.
-        // Veja slides 195-227 e 229-234 do documento Aula_08_Sistemas_de_Coordenadas.pdf.
-        glm::vec4 camera_position_c = glm::vec4(x, y, z, 1.0f);             // Ponto "c", centro da câmera
-        glm::vec4 camera_lookat_l = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);      // Ponto "l", para onde a câmera (look-at) estará sempre olhando
-        glm::vec4 camera_view_vector = camera_lookat_l - camera_position_c; // Vetor "view", sentido para onde a câmera está virada
-        glm::vec4 camera_up_vector = glm::vec4(0.0f, 1.0f, 0.0f, 0.0f);     // Vetor "up" fixado para apontar para o "céu" (eito Y global)
+        // Criar um Renderer
+        Renderer renderer(g_GpuProgramID);
+
+        camera.onUpdate(dt);
+
+        // // Computamos a posição da câmera utilizando coordenadas esféricas.  As
+        // // variáveis g_CameraDistance, g_CameraPhi, e g_CameraTheta são
+        // // controladas pelo mouse do usuário. Veja as funções CursorPosCallback()
+        // // e ScrollCallback().
+        // float r = g_CameraDistance;
+        // float y = r * sin(g_CameraPhi);
+        // float z = r * cos(g_CameraPhi) * cos(g_CameraTheta);
+        // float x = r * cos(g_CameraPhi) * sin(g_CameraTheta);
+
+        // // Abaixo definimos as varáveis que efetivamente definem a câmera virtual.
+        // // Veja slides 195-227 e 229-234 do documento Aula_08_Sistemas_de_Coordenadas.pdf.
+        // glm::vec4 camera_position_c = glm::vec4(x, y, z, 1.0f);             // Ponto "c", centro da câmera
+        // glm::vec4 camera_lookat_l = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);      // Ponto "l", para onde a câmera (look-at) estará sempre olhando
+        // glm::vec4 camera_view_vector = camera_lookat_l - camera_position_c; // Vetor "view", sentido para onde a câmera está virada
+        // glm::vec4 camera_up_vector = glm::vec4(0.0f, 1.0f, 0.0f, 0.0f);     // Vetor "up" fixado para apontar para o "céu" (eito Y global)
 
         // Computamos a matriz "View" utilizando os parâmetros da câmera para
         // definir o sistema de coordenadas da câmera.  Veja slides 2-14, 184-190 e 236-242 do documento Aula_08_Sistemas_de_Coordenadas.pdf.
-        glm::mat4 view = Matrix_Camera_View(camera_position_c, camera_view_vector, camera_up_vector);
+        // glm::mat4 view = Matrix_Camera_View(camera_position_c, camera_view_vector, camera_up_vector);
+        // added
+        glm::mat4 view;
 
         // Agora computamos a matriz de Projeção.
         glm::mat4 projection;
+        camera.computeMatrices(view, projection);
+        glUniformMatrix4fv(view_uniform, 1, GL_FALSE, glm::value_ptr(view));
+        glUniformMatrix4fv(projection_uniform, 1, GL_FALSE, glm::value_ptr(projection));
+
+        e1->onUpdate(dt);
+        e2->onUpdate(dt);
+
+        e1->onRender(renderer);
+        e2->onRender(renderer);
 
         // Note que, no sistema de coordenadas da câmera, os planos near e far
         // estão no sentido negativo! Veja slides 176-204 do documento Aula_09_Projecoes.pdf.
-        float nearplane = -0.1f;    // Posição do "near plane"
-        float farplane = -10000.0f; // Posição do "far plane"
+        // float nearplane = -0.1f;    // Posição do "near plane"
+        // float farplane = -10000.0f; // Posição do "far plane"
 
-        if (g_UsePerspectiveProjection)
-        {
-            // Projeção Perspectiva.
-            // Para definição do field of view (FOV), veja slides 205-215 do documento Aula_09_Projecoes.pdf.
-            float field_of_view = 3.141592 / 3.0f;
-            projection = Matrix_Perspective(field_of_view, g_ScreenRatio, nearplane, farplane);
-        }
-        else
-        {
-            // Projeção Ortográfica.
-            // Para definição dos valores l, r, b, t ("left", "right", "bottom", "top"),
-            // PARA PROJEÇÃO ORTOGRÁFICA veja slides 219-224 do documento Aula_09_Projecoes.pdf.
-            // Para simular um "zoom" ortográfico, computamos o valor de "t"
-            // utilizando a variável g_CameraDistance.
-            float t = 1.5f * g_CameraDistance / 2.5f;
-            float b = -t;
-            float r = t * g_ScreenRatio;
-            float l = -r;
-            projection = Matrix_Orthographic(l, r, b, t, nearplane, farplane);
-        }
+        // if (g_UsePerspectiveProjection)
+        // {
+        //     // Projeção Perspectiva.
+        //     // Para definição do field of view (FOV), veja slides 205-215 do documento Aula_09_Projecoes.pdf.
+        //     float field_of_view = 3.141592 / 3.0f;
+        //     projection = Matrix_Perspective(field_of_view, g_ScreenRatio, nearplane, farplane);
+        // }
+        // else
+        // {
+        //     // Projeção Ortográfica.
+        //     // Para definição dos valores l, r, b, t ("left", "right", "bottom", "top"),
+        //     // PARA PROJEÇÃO ORTOGRÁFICA veja slides 219-224 do documento Aula_09_Projecoes.pdf.
+        //     // Para simular um "zoom" ortográfico, computamos o valor de "t"
+        //     // utilizando a variável g_CameraDistance.
+        //     float t = 1.5f * g_CameraDistance / 2.5f;
+        //     float b = -t;
+        //     float r = t * g_ScreenRatio;
+        //     float l = -r;
+        //     projection = Matrix_Orthographic(l, r, b, t, nearplane, farplane);
+        // }
 
         glm::mat4 model = Matrix_Identity(); // Transformação identidade de modelagem
 
@@ -563,6 +761,21 @@ int main(int argc, char *argv[])
         glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model));
         glUniform1i(g_object_id_uniform, ACACIA);
         DrawVirtualObject("acacia_tree_vol_15-00");
+
+        // added
+        glUniformMatrix4fv(model_uniform, 1, GL_FALSE, glm::value_ptr(model));
+        glLineWidth(10.0f);
+        glUniform1i(render_as_black_uniform, false);
+        glDrawElements(
+            g_VirtualFireworks["axes"].rendering_mode,
+            g_VirtualFireworks["axes"].num_indices,
+            GL_UNSIGNED_INT,
+            (void *)g_VirtualFireworks["axes"].first_index);
+
+        if (!camera.isLookAt)
+        {
+            showReticle(window);
+        }
 
         // Imprimimos na tela os ângulos de Euler que controlam a rotação do
         // terceiro cubo.
@@ -739,26 +952,6 @@ void LoadShadersFromFiles()
     glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage10"), 10);
     glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage11"), 11);
     glUseProgram(0);
-}
-
-// Função que pega a matriz M e guarda a mesma no topo da pilha
-void PushMatrix(glm::mat4 M)
-{
-    g_MatrixStack.push(M);
-}
-
-// Função que remove a matriz atualmente no topo da pilha e armazena a mesma na variável M
-void PopMatrix(glm::mat4 &M)
-{
-    if (g_MatrixStack.empty())
-    {
-        M = Matrix_Identity();
-    }
-    else
-    {
-        M = g_MatrixStack.top();
-        g_MatrixStack.pop();
-    }
 }
 
 // Função que computa as normais de um ObjModel, caso elas não tenham sido
@@ -1237,13 +1430,6 @@ void CursorPosCallback(GLFWwindow *window, double xpos, double ypos)
 
     if (g_RightMouseButtonPressed)
     {
-        // Deslocamento do cursor do mouse em x e y de coordenadas de tela!
-        float dx = xpos - g_LastCursorPosX;
-        float dy = ypos - g_LastCursorPosY;
-
-        // Atualizamos parâmetros da antebraço com os deslocamentos
-        g_ForearmAngleZ -= 0.01f * dx;
-        g_ForearmAngleX += 0.01f * dy;
 
         // Atualizamos as variáveis globais para armazenar a posição atual do
         // cursor como sendo a última posição conhecida do cursor.
@@ -1253,14 +1439,6 @@ void CursorPosCallback(GLFWwindow *window, double xpos, double ypos)
 
     if (g_MiddleMouseButtonPressed)
     {
-        // Deslocamento do cursor do mouse em x e y de coordenadas de tela!
-        float dx = xpos - g_LastCursorPosX;
-        float dy = ypos - g_LastCursorPosY;
-
-        // Atualizamos parâmetros da antebraço com os deslocamentos
-        g_TorsoPositionX += 0.01f * dx;
-        g_TorsoPositionY -= 0.01f * dy;
-
         // Atualizamos as variáveis globais para armazenar a posição atual do
         // cursor como sendo a última posição conhecida do cursor.
         g_LastCursorPosX = xpos;
@@ -1331,10 +1509,6 @@ void KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mod)
         g_AngleX = 0.0f;
         g_AngleY = 0.0f;
         g_AngleZ = 0.0f;
-        g_ForearmAngleX = 0.0f;
-        g_ForearmAngleZ = 0.0f;
-        g_TorsoPositionX = 0.0f;
-        g_TorsoPositionY = 0.0f;
     }
 
     // Se o usuário apertar a tecla P, utilizamos projeção perspectiva.
@@ -1682,3 +1856,214 @@ void PrintObjModelInfo(ObjModel *model)
 
 // set makeprg=cd\ ..\ &&\ make\ run\ >/dev/null
 // vim: set spell spelllang=pt_br :
+
+void DrawCube(GLint render_as_black_uniform)
+{
+    glUniform1i(render_as_black_uniform, false);
+    // Cube
+    {
+        glDrawElements(
+            g_VirtualFireworks["cube_faces"].rendering_mode, // Veja slides 182-188 do documento Aula_04_Modelagem_Geometrica_3D.pdf
+            g_VirtualFireworks["cube_faces"].num_indices,    //
+            GL_UNSIGNED_INT,
+            (void *)g_VirtualFireworks["cube_faces"].first_index);
+    }
+    return;
+    // Axes
+    {
+        glLineWidth(4.0f);
+        glDrawElements(
+            g_VirtualFireworks["axes"].rendering_mode,
+            g_VirtualFireworks["axes"].num_indices,
+            GL_UNSIGNED_INT,
+            (void *)g_VirtualFireworks["axes"].first_index);
+    }
+    // Edges
+    {
+        glUniform1i(render_as_black_uniform, true);
+        glDrawElements(
+            g_VirtualFireworks["cube_edges"].rendering_mode,
+            g_VirtualFireworks["cube_edges"].num_indices,
+            GL_UNSIGNED_INT,
+            (void *)g_VirtualFireworks["cube_edges"].first_index);
+    }
+}
+
+GLuint BuildTriangles()
+{
+    GLfloat model_coefficients[] = {
+        // Vértices de um cubo
+        //    X      Y     Z     W
+        -0.5f, 0.0f, 0.5f, 1.0f,   // posição do vértice 0
+        -0.5f, -1.0f, 0.5f, 1.0f,  // posição do vértice 1
+        0.5f, -1.0f, 0.5f, 1.0f,   // posição do vértice 2
+        0.5f, 0.0f, 0.5f, 1.0f,    // posição do vértice 3
+        -0.5f, 0.0f, -0.5f, 1.0f,  // posição do vértice 4
+        -0.5f, -1.0f, -0.5f, 1.0f, // posição do vértice 5
+        0.5f, -1.0f, -0.5f, 1.0f,  // posição do vértice 6
+        0.5f, 0.0f, -0.5f, 1.0f,   // posição do vértice 7
+                                   // Vértices para desenhar o eixo X
+                                   //    X      Y     Z     W
+        0.0f, 0.0f, 0.0f, 1.0f,    // posição do vértice 8
+        1.0f, 0.0f, 0.0f, 1.0f,    // posição do vértice 9
+                                   // Vértices para desenhar o eixo Y
+                                   //    X      Y     Z     W
+        0.0f, 0.0f, 0.0f, 1.0f,    // posição do vértice 10
+        0.0f, 1.0f, 0.0f, 1.0f,    // posição do vértice 11
+                                   // Vértices para desenhar o eixo Z
+                                   //    X      Y     Z     W
+        0.0f, 0.0f, 0.0f, 1.0f,    // posição do vértice 12
+        0.0f, 0.0f, 1.0f, 1.0f,    // posição do vértice 13
+    };
+    // Setup (just so things get to exist)
+    GLuint VBO_model_coefficients_id;
+    glGenBuffers(1, &VBO_model_coefficients_id);
+    GLuint vertex_array_object_idFireworks;
+    glGenVertexArrays(1, &vertex_array_object_idFireworks);
+    glBindVertexArray(vertex_array_object_idFireworks);
+    // Transfer data
+    glBindBuffer(GL_ARRAY_BUFFER, VBO_model_coefficients_id);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(model_coefficients), NULL, GL_STATIC_DRAW);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(model_coefficients), model_coefficients);
+    // Setup shader stuff
+    GLuint location = 0;            // "(location = 0)" em "shader_vertex.glsl"
+    GLint number_of_dimensions = 4; // vec4 em "shader_vertex.glsl"
+    glVertexAttribPointer(location, number_of_dimensions, GL_FLOAT, GL_FALSE, 0, 0);
+    glEnableVertexAttribArray(location);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    GLfloat color_coefficients[] = {
+        // Cores dos vértices do cubo
+        //  R     G     B     A
+        1.0f, 0.5f, 0.0f, 1.0f, // cor do vértice 0
+        1.0f, 0.5f, 0.0f, 1.0f, // cor do vértice 1
+        0.0f, 0.5f, 1.0f, 1.0f, // cor do vértice 2
+        0.0f, 0.5f, 1.0f, 1.0f, // cor do vértice 3
+        1.0f, 0.5f, 0.0f, 1.0f, // cor do vértice 4
+        1.0f, 0.5f, 0.0f, 1.0f, // cor do vértice 5
+        0.0f, 0.5f, 1.0f, 1.0f, // cor do vértice 6
+        0.0f, 0.5f, 1.0f, 1.0f, // cor do vértice 7
+        // Cores para desenhar o eixo X
+        1.0f, 0.0f, 0.0f, 1.0f, // cor do vértice 8
+        1.0f, 0.0f, 0.0f, 1.0f, // cor do vértice 9
+        // Cores para desenhar o eixo Y
+        0.0f, 1.0f, 0.0f, 1.0f, // cor do vértice 10
+        0.0f, 1.0f, 0.0f, 1.0f, // cor do vértice 11
+        // Cores para desenhar o eixo Z
+        0.0f, 0.0f, 1.0f, 1.0f, // cor do vértice 12
+        0.0f, 0.0f, 1.0f, 1.0f, // cor do vértice 13
+    };
+    GLuint VBO_color_coefficients_id;
+    glGenBuffers(1, &VBO_color_coefficients_id);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO_color_coefficients_id);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(color_coefficients), NULL, GL_STATIC_DRAW);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(color_coefficients), color_coefficients);
+    location = 1;             // "(location = 1)" em "shader_vertex.glsl"
+    number_of_dimensions = 4; // vec4 em "shader_vertex.glsl"
+    glVertexAttribPointer(location, number_of_dimensions, GL_FLOAT, GL_FALSE, 0, 0);
+    glEnableVertexAttribArray(location);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    GLuint indices[] = {
+        // Definimos os índices dos vértices que definem as FACES de um cubo
+        // através de 12 triângulos que serão desenhados com o modo de renderização
+        // GL_TRIANGLES.
+        0, 1, 2, // triângulo 1
+        7, 6, 5, // triângulo 2
+        3, 2, 6, // triângulo 3
+        4, 0, 3, // triângulo 4
+        4, 5, 1, // triângulo 5
+        1, 5, 6, // triângulo 6
+        0, 2, 3, // triângulo 7
+        7, 5, 4, // triângulo 8
+        3, 6, 7, // triângulo 9
+        4, 3, 7, // triângulo 10
+        4, 1, 0, // triângulo 11
+        1, 6, 2, // triângulo 12
+                 // Definimos os índices dos vértices que definem as ARESTAS de um cubo
+                 // através de 12 linhas que serão desenhadas com o modo de renderização
+                 // GL_LINES.
+        0, 1,    // linha 1
+        1, 2,    // linha 2
+        2, 3,    // linha 3
+        3, 0,    // linha 4
+        0, 4,    // linha 5
+        4, 7,    // linha 6
+        7, 6,    // linha 7
+        6, 2,    // linha 8
+        6, 5,    // linha 9
+        5, 4,    // linha 10
+        5, 1,    // linha 11
+        7, 3,    // linha 12
+                 // Definimos os índices dos vértices que definem as linhas dos eixos X, Y,
+                 // Z, que serão desenhados com o modo GL_LINES.
+        8, 9,    // linha 1
+        10, 11,  // linha 2
+        12, 13   // linha 3
+    };
+    SceneObject cube_faces;
+    cube_faces.name = "Cubo (faces coloridas)";
+    cube_faces.first_index = 0;               // Primeiro índice está em indices[0]
+    cube_faces.num_indices = 36;              // Último índice está em indices[35]; total de 36 índices.
+    cube_faces.rendering_mode = GL_TRIANGLES; // Índices correspondem ao tipo de rasterização GL_TRIANGLES.
+    g_VirtualFireworks["cube_faces"] = cube_faces;
+    SceneObject cube_edges;
+    cube_edges.name = "Cubo (arestas pretas)";
+    cube_edges.first_index = (36 * sizeof(GLuint)); // Primeiro índice está em indices[36]
+    cube_edges.num_indices = 24;                    // Último índice está em indices[59]; total de 24 índices.
+    cube_edges.rendering_mode = GL_LINES;           // Índices correspondem ao tipo de rasterização GL_LINES.
+    // Adicionamos o objeto criado acima na nossa cena virtual (g_VirtualFireworks).
+    g_VirtualFireworks["cube_edges"] = cube_edges;
+    // Criamos um terceiro objeto virtual (SceneObject) que se refere aos eixos XYZ.
+    SceneObject axes;
+    axes.name = "Eixos XYZ";
+    axes.first_index = (60 * sizeof(GLuint)); // Primeiro índice está em indices[60]
+    axes.num_indices = 6;                     // Último índice está em indices[65]; total de 6 índices.
+    axes.rendering_mode = GL_LINES;           // Índices correspondem ao tipo de rasterização GL_LINES.
+    g_VirtualFireworks["axes"] = axes;
+    // Criamos um buffer OpenGL para armazenar os índices acima
+    GLuint indices_id;
+    glGenBuffers(1, &indices_id);
+    // "Ligamos" o buffer. Note que o tipo agora é GL_ELEMENT_ARRAY_BUFFER.
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indices_id);
+    // Alocamos memória para o buffer.
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), NULL, GL_STATIC_DRAW);
+    // Copiamos os valores do array indices[] para dentro do buffer.
+    glBufferSubData(GL_ELEMENT_ARRAY_BUFFER, 0, sizeof(indices), indices);
+    // NÃO faça a chamada abaixo! Diferente de um VBO (GL_ARRAY_BUFFER), um
+    // array de índices (GL_ELEMENT_ARRAY_BUFFER) não pode ser "desligado",
+    // caso contrário o VAO irá perder a informação sobre os índices.
+    //
+    // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0); // XXX Errado!
+    //
+    // "Desligamos" o VAO, evitando assim que operações posteriores venham a
+    // alterar o mesmo. Isso evita bugs.
+    glBindVertexArray(0);
+    // Retornamos o ID do VAO. Isso é tudo que será necessário para renderizar
+    // os triângulos definidos acima. Veja a chamada glDrawElements() em main().
+    return vertex_array_object_idFireworks;
+}
+
+GLuint loadVertexShader(const char *filename)
+{
+    GLuint vertex_shader_id = glCreateShader(GL_VERTEX_SHADER);
+    LoadShader(filename, vertex_shader_id);
+    return vertex_shader_id;
+}
+
+GLuint loadFragmentShader(const char *filename)
+{
+    GLuint fragment_shader_id = glCreateShader(GL_FRAGMENT_SHADER);
+    LoadShader(filename, fragment_shader_id);
+    return fragment_shader_id;
+}
+
+// Escrevemos na tela o número de quadros renderizados por segundo (frames per
+// second).
+void showReticle(GLFWwindow *window)
+{
+    static char buffer[] = "+";
+
+    float lineheight = TextRendering_LineHeight(window);
+    float charwidth = TextRendering_CharWidth(window);
+
+    TextRendering_PrintString(window, buffer, -0.5f * charwidth, -0.5 * lineheight, 1.0f);
+}
