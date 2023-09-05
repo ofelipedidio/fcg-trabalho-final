@@ -342,6 +342,10 @@ int main(int argc, char *argv[])
     ComputeNormals(&ferrisbmodel);
     BuildTrianglesAndAddToVirtualScene(&ferrisbmodel);
 
+    ObjModel acaciamodel("../data/acacia tree vol 15_OBJ.obj");
+    ComputeNormals(&acaciamodel);
+    BuildTrianglesAndAddToVirtualScene(&acaciamodel);
+
     if (argc > 1)
     {
         ObjModel model(argv[1]);
@@ -444,6 +448,7 @@ int main(int argc, char *argv[])
 #define FERN 4
 #define BUILD1 5
 #define FERRIS 6
+#define ACACIA 7
 
         glDisable(GL_CULL_FACE);
 
@@ -464,7 +469,7 @@ int main(int argc, char *argv[])
         DrawVirtualObject("the_bunny");
 
         // Desenhamos o plano do chão
-        model = Matrix_Translate(0.0f, -1.0f, 0.0f) * Matrix_Scale(50.0f, 1.0f, 50.0f);
+        model = Matrix_Translate(0.0f, -1.0f, 0.0f) * Matrix_Scale(100.0f, 1.0f, 100.0f);
         glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model));
         glUniform1i(g_object_id_uniform, PLANE);
         DrawVirtualObject("the_plane");
@@ -532,10 +537,32 @@ int main(int argc, char *argv[])
         glUniform1i(g_object_id_uniform, BUILD1);
         DrawVirtualObject("tower");
 
+        // Desenhamos o modelo da ferris wheel
         model = Matrix_Translate(10.0f, 2.5f, -10.0f) * Matrix_Scale(2.0f, 2.0f, 2.0f) * Matrix_Rotate_Y(-0.8f);
         glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model));
         glUniform1i(g_object_id_uniform, FERRIS);
         DrawVirtualObject("3");
+
+        // Desenhamos o modelo da árvore
+        model = Matrix_Translate(15.0f, -1.2f, -6.0f) * Matrix_Scale(0.5f, 0.5f, 0.5f);
+        glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, ACACIA);
+        DrawVirtualObject("acacia_tree_vol_15-00");
+
+        model = Matrix_Translate(25.0f, -1.2f, 0.0f) * Matrix_Scale(0.5f, 0.5f, 0.5f);
+        glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, ACACIA);
+        DrawVirtualObject("acacia_tree_vol_15-00");
+
+        model = Matrix_Translate(12.0f, -1.2f, 6.0f) * Matrix_Scale(0.5f, 0.5f, 0.5f);
+        glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, ACACIA);
+        DrawVirtualObject("acacia_tree_vol_15-00");
+
+        model = Matrix_Translate(-10.0f, -1.2f, -6.0f) * Matrix_Scale(0.5f, 0.5f, 0.5f);
+        glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model));
+        glUniform1i(g_object_id_uniform, ACACIA);
+        DrawVirtualObject("acacia_tree_vol_15-00");
 
         // Imprimimos na tela os ângulos de Euler que controlam a rotação do
         // terceiro cubo.
