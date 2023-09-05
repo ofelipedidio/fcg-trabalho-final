@@ -28,7 +28,7 @@ events:
       Compilation of the C compiler identification source "CMakeCCompilerId.c" produced "a.out"
       
       The C compiler identification is GNU, found in:
-        /home/felipe/ufrgs/2023_01/fcg/fcg-trabalho-final-1/cmake-build-debug/CMakeFiles/3.26.4/CompilerIdC/a.out
+        /home/felipe/ufrgs/2023_01/fcg/fcg-trabalho-final/cmake-build-debug/CMakeFiles/3.26.4/CompilerIdC/a.out
       
   -
     kind: "message-v1"
@@ -50,7 +50,7 @@ events:
       Compilation of the CXX compiler identification source "CMakeCXXCompilerId.cpp" produced "a.out"
       
       The CXX compiler identification is GNU, found in:
-        /home/felipe/ufrgs/2023_01/fcg/fcg-trabalho-final-1/cmake-build-debug/CMakeFiles/3.26.4/CompilerIdCXX/a.out
+        /home/felipe/ufrgs/2023_01/fcg/fcg-trabalho-final/cmake-build-debug/CMakeFiles/3.26.4/CompilerIdCXX/a.out
       
   -
     kind: "try_compile-v1"
@@ -61,8 +61,8 @@ events:
     checks:
       - "Detecting C compiler ABI info"
     directories:
-      source: "/home/felipe/ufrgs/2023_01/fcg/fcg-trabalho-final-1/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-l6svYu"
-      binary: "/home/felipe/ufrgs/2023_01/fcg/fcg-trabalho-final-1/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-l6svYu"
+      source: "/home/felipe/ufrgs/2023_01/fcg/fcg-trabalho-final/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-l6svYu"
+      binary: "/home/felipe/ufrgs/2023_01/fcg/fcg-trabalho-final/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-l6svYu"
     cmakeVariables:
       CMAKE_C_FLAGS: ""
       CMAKE_C_FLAGS_DEBUG: "-g"
@@ -71,7 +71,7 @@ events:
       variable: "CMAKE_C_ABI_COMPILED"
       cached: true
       stdout: |
-        Change Dir: /home/felipe/ufrgs/2023_01/fcg/fcg-trabalho-final-1/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-l6svYu
+        Change Dir: /home/felipe/ufrgs/2023_01/fcg/fcg-trabalho-final/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-l6svYu
         
         Run Build Command(s):/snap/clion/249/bin/ninja/linux/x64/ninja -v cmTC_15384 && [1/2] /usr/bin/cc   -fdiagnostics-color=always   -v -o CMakeFiles/cmTC_15384.dir/CMakeCCompilerABI.c.o -c /snap/clion/249/bin/cmake/linux/x64/share/cmake-3.26/Modules/CMakeCCompilerABI.c
         Using built-in specs.
@@ -159,7 +159,7 @@ events:
     message: |
       Parsed C implicit link information:
         link line regex: [^( *|.*[/\\])(ld|CMAKE_LINK_STARTFILE-NOTFOUND|([^/\\]+-)?ld|collect2)[^/\\]*( |$)]
-        ignore line: [Change Dir: /home/felipe/ufrgs/2023_01/fcg/fcg-trabalho-final-1/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-l6svYu]
+        ignore line: [Change Dir: /home/felipe/ufrgs/2023_01/fcg/fcg-trabalho-final/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-l6svYu]
         ignore line: []
         ignore line: [Run Build Command(s):/snap/clion/249/bin/ninja/linux/x64/ninja -v cmTC_15384 && [1/2] /usr/bin/cc   -fdiagnostics-color=always   -v -o CMakeFiles/cmTC_15384.dir/CMakeCCompilerABI.c.o -c /snap/clion/249/bin/cmake/linux/x64/share/cmake-3.26/Modules/CMakeCCompilerABI.c]
         ignore line: [Using built-in specs.]
@@ -287,8 +287,8 @@ events:
     checks:
       - "Detecting CXX compiler ABI info"
     directories:
-      source: "/home/felipe/ufrgs/2023_01/fcg/fcg-trabalho-final-1/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-QawnoA"
-      binary: "/home/felipe/ufrgs/2023_01/fcg/fcg-trabalho-final-1/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-QawnoA"
+      source: "/home/felipe/ufrgs/2023_01/fcg/fcg-trabalho-final/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-QawnoA"
+      binary: "/home/felipe/ufrgs/2023_01/fcg/fcg-trabalho-final/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-QawnoA"
     cmakeVariables:
       CMAKE_CXX_FLAGS: ""
       CMAKE_CXX_FLAGS_DEBUG: "-g"
@@ -297,7 +297,7 @@ events:
       variable: "CMAKE_CXX_ABI_COMPILED"
       cached: true
       stdout: |
-        Change Dir: /home/felipe/ufrgs/2023_01/fcg/fcg-trabalho-final-1/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-QawnoA
+        Change Dir: /home/felipe/ufrgs/2023_01/fcg/fcg-trabalho-final/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-QawnoA
         
         Run Build Command(s):/snap/clion/249/bin/ninja/linux/x64/ninja -v cmTC_de63a && [1/2] /usr/bin/c++   -fdiagnostics-color=always   -v -o CMakeFiles/cmTC_de63a.dir/CMakeCXXCompilerABI.cpp.o -c /snap/clion/249/bin/cmake/linux/x64/share/cmake-3.26/Modules/CMakeCXXCompilerABI.cpp
         Using built-in specs.
@@ -395,7 +395,7 @@ events:
     message: |
       Parsed CXX implicit link information:
         link line regex: [^( *|.*[/\\])(ld|CMAKE_LINK_STARTFILE-NOTFOUND|([^/\\]+-)?ld|collect2)[^/\\]*( |$)]
-        ignore line: [Change Dir: /home/felipe/ufrgs/2023_01/fcg/fcg-trabalho-final-1/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-QawnoA]
+        ignore line: [Change Dir: /home/felipe/ufrgs/2023_01/fcg/fcg-trabalho-final/cmake-build-debug/CMakeFiles/CMakeScratch/TryCompile-QawnoA]
         ignore line: []
         ignore line: [Run Build Command(s):/snap/clion/249/bin/ninja/linux/x64/ninja -v cmTC_de63a && [1/2] /usr/bin/c++   -fdiagnostics-color=always   -v -o CMakeFiles/cmTC_de63a.dir/CMakeCXXCompilerABI.cpp.o -c /snap/clion/249/bin/cmake/linux/x64/share/cmake-3.26/Modules/CMakeCXXCompilerABI.cpp]
         ignore line: [Using built-in specs.]

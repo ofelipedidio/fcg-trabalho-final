@@ -1,3 +1,3 @@
-/home/felipe/ufrgs/2023_01/fcg/fcg-trabalho-final-1/cmake-build-debug/CMakeFiles/main.dir
-/home/felipe/ufrgs/2023_01/fcg/fcg-trabalho-final-1/cmake-build-debug/CMakeFiles/edit_cache.dir
-/home/felipe/ufrgs/2023_01/fcg/fcg-trabalho-final-1/cmake-build-debug/CMakeFiles/rebuild_cache.dir
+/home/felipe/ufrgs/2023_01/fcg/fcg-trabalho-final/cmake-build-debug/CMakeFiles/main.dir
+/home/felipe/ufrgs/2023_01/fcg/fcg-trabalho-final/cmake-build-debug/CMakeFiles/edit_cache.dir
+/home/felipe/ufrgs/2023_01/fcg/fcg-trabalho-final/cmake-build-debug/CMakeFiles/rebuild_cache.dir
