@@ -39,7 +39,7 @@
 				{
 					"directoryIndex" : 0,
 					"id" : "main::@6890427a1f51a3e7e1df",
-					"jsonFile" : "target-main-Debug-5a2e27ad4e268acccb2b.json",
+					"jsonFile" : "target-main-Debug-c8dd2eb094a92338cb42.json",
 					"name" : "main",
 					"projectIndex" : 0
 				}
@@ -49,8 +49,8 @@
 	"kind" : "codemodel",
 	"paths" : 
 	{
-		"build" : "/home/felipe/ufrgs/2023_01/fcg/fcg-trabalho-final/cmake-build-debug",
-		"source" : "/home/felipe/ufrgs/2023_01/fcg/fcg-trabalho-final"
+		"build" : "/home/felipe/ufrgs/2023_01/fcg/fcg-trabalho-final-1/cmake-build-debug",
+		"source" : "/home/felipe/ufrgs/2023_01/fcg/fcg-trabalho-final-1"
 	},
 	"version" : 
 	{

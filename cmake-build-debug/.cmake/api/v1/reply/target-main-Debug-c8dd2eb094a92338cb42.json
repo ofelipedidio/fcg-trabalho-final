@@ -56,7 +56,7 @@
 			[
 				{
 					"backtrace" : 3,
-					"path" : "/home/felipe/ufrgs/2023_01/fcg/fcg-trabalho-final/include"
+					"path" : "/home/felipe/ufrgs/2023_01/fcg/fcg-trabalho-final-1/include"
 				}
 			],
 			"language" : "CXX",
@@ -94,7 +94,7 @@
 			[
 				{
 					"backtrace" : 3,
-					"path" : "/home/felipe/ufrgs/2023_01/fcg/fcg-trabalho-final/include"
+					"path" : "/home/felipe/ufrgs/2023_01/fcg/fcg-trabalho-final-1/include"
 				}
 			],
 			"language" : "C",
@@ -119,7 +119,7 @@
 			},
 			{
 				"backtrace" : 2,
-				"fragment" : "/home/felipe/ufrgs/2023_01/fcg/fcg-trabalho-final/lib-linux/libglfw3.a",
+				"fragment" : "/home/felipe/ufrgs/2023_01/fcg/fcg-trabalho-final-1/lib-linux/libglfw3.a",
 				"role" : "libraries"
 			},
 			{
