@@ -487,9 +487,9 @@ int main(int argc, char *argv[])
     ComputeNormals(&ferrisbmodel);
     BuildTrianglesAndAddToVirtualScene(&ferrisbmodel);
 
-    //ObjModel acaciamodel("../data/acacia tree vol 15_OBJ.obj");
-    //ComputeNormals(&acaciamodel);
-    //BuildTrianglesAndAddToVirtualScene(&acaciamodel);
+    // ObjModel acaciamodel("../data/acacia tree vol 15_OBJ.obj");
+    // ComputeNormals(&acaciamodel);
+    // BuildTrianglesAndAddToVirtualScene(&acaciamodel);
 
     if (argc > 1)
     {
@@ -1585,6 +1585,15 @@ void KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mod)
     for (int i = 0; i < 10; ++i)
         if (key == GLFW_KEY_0 + i && action == GLFW_PRESS && mod == GLFW_MOD_SHIFT)
             std::exit(100 + i);
+    // Se o usuário pressionar a tecla ESC, fechamos a janela.
+    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+        glfwSetWindowShouldClose(window, GL_TRUE);
+    if (key == GLFW_KEY_R && action == GLFW_PRESS)
+    {
+        LoadShadersFromFiles();
+        fprintf(stdout, "Shaders recarregados!\n");
+        fflush(stdout);
+    }
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
     {
         glfwSetWindowShouldClose(window, GL_TRUE);
