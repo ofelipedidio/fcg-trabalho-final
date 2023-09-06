@@ -460,6 +460,8 @@ int main(int argc, char *argv[])
     LoadTextureImage("../data/WoodPlanksBeamed0042_4_L.jpg");
     LoadTextureImage("../data/WoodPlanksDirty0008_L.jpg");
     LoadTextureImage("../data/sky.png");
+    LoadTextureImage("../data/firework1.png");
+    LoadTextureImage("../data/firework2.png");
 
     // Construímos a representação de objetos geométricos através de malhas de triângulos
     ObjModel spheremodel("../data/sphere.obj");
@@ -537,7 +539,7 @@ int main(int argc, char *argv[])
     RenderObject ro((void *)g_VirtualFireworks["cube_faces"].first_index, g_VirtualFireworks["cube_faces"].num_indices, g_VirtualFireworks["cube_faces"].rendering_mode);
     emitterProprieties.object = ro;
 
-    e1 = new Emitter::ParticleEmitter(10000, emitterProprieties);
+    e1 = new Emitter::ParticleEmitter(100000, emitterProprieties);
 
     emitterProprieties.finalSize = 0.5f;
     e2 = new Emitter::ParticleEmitter(10000, emitterProprieties);
@@ -580,6 +582,8 @@ int main(int argc, char *argv[])
         e1->onUpdate(dt);
         e2->onUpdate(dt);
 
+#define FIREWORK 8
+        glUniform1i(g_object_id_uniform, FIREWORK);
         e1->onRender(renderer);
         e2->onRender(renderer);
 
@@ -894,6 +898,8 @@ void LoadShadersFromFiles()
     glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage9"), 9);
     glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage10"), 10);
     glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage11"), 11);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage12"), 12);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage13"), 13);
     glUseProgram(0);
 }
 
@@ -1326,6 +1332,8 @@ double g_LastCursorPosX, g_LastCursorPosY;
         float time = collision::collide(floor, ray);
         collision::Point p = ray.at(time);
         onClickFloor(button, action, mods, p.x, p.z);
+
+        std::cout << "Clicked at (" << p.x << ", " << p.z << ")" << std::endl;
     } else if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_RELEASE) {
         g_RightMouseButtonPressed = false;
     }
@@ -1440,22 +1448,6 @@ void CursorPosCallback(GLFWwindow *window, double xpos, double ypos)
     }
 }
 
-// Função callback chamada sempre que o usuário movimenta a "rodinha" do mouse.
-/*void ScrollCallback(GLFWwindow *window, double xoffset, double yoffset)
-{
-    // Atualizamos a distância da câmera para a origem utilizando a
-    // movimentação da "rodinha", simulando um ZOOM.
-    g_CameraDistance -= 0.1f * yoffset;
-
-    // Uma câmera look-at nunca pode estar exatamente "em cima" do ponto para
-    // onde ela está olhando, pois isto gera problemas de divisão por zero na
-    // definição do sistema de coordenadas da câmera. Isto é, a variável abaixo
-    // nunca pode ser zero. Versões anteriores deste código possuíam este bug,
-    // o qual foi detectado pelo aluno Vinicius Fraga (2017/2).
-    const float verysmallnumber = std::numeric_limits<float>::epsilon();
-    if (g_CameraDistance < verysmallnumber)
-        g_CameraDistance = verysmallnumber;
-}*/
 void ScrollCallback(GLFWwindow *window, double xoffset, double yoffset)
 {
     camera.distance -= 1.0f * yoffset;
@@ -1465,6 +1457,7 @@ void ScrollCallback(GLFWwindow *window, double xoffset, double yoffset)
         camera.distance = verySmallNumber;
     }
 }
+
 RenderObject renderObjectOf(const char *object_id)
 {
     return {
@@ -1478,6 +1471,13 @@ void KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mod)
     for (int i = 0; i < 10; ++i)
         if (key == GLFW_KEY_0 + i && action == GLFW_PRESS && mod == GLFW_MOD_SHIFT)
             std::exit(100 + i);
+
+
+    if (key == GLFW_KEY_R && action == GLFW_PRESS) {
+        LoadShadersFromFiles();
+        fprintf(stdout, "Shaders recarregados!\n");
+        fflush(stdout);
+    } else if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
     // Se o usuário pressionar a tecla ESC, fechamos a janela.
     if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
         glfwSetWindowShouldClose(window, GL_TRUE);
@@ -1587,6 +1587,14 @@ void KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mod)
         camera.bezierCurve.p1 = glm::vec4(0.0f, 0.0f, 20.0f, 1.0f);
         camera.bezierCurve.p2 = glm::vec4(00.0f, -20.0f, -30.0f, 1.0f);
         camera.bezierCurve.p3 = glm::vec4(-50.0f, 10.0f, -0.0f, 1.0f);
+    } else if (key == GLFW_KEY_E) {
+        glm::vec4 center = glm::vec4(0, 0, -15, 1);
+        float r = 15;
+
+        for (float theta = 0; theta < 2*PI; theta += (PI/5)) {
+            glm::vec4 p = center + r*glm::vec4(std::cos(theta), 0, std::sin(theta), 0);
+            sphericalFirework(p, e1, e1);
+        }
     }
     // acess cinema1 camera with 1
     else if (key == GLFW_KEY_1 && action == GLFW_PRESS)
