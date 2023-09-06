@@ -56,7 +56,7 @@ Emitter::ParticleEmitter *e1;
 Emitter::ParticleEmitter *e2;
 
 // added fireworks functions
-void sphericalFirework(glm::vec4 position, Emitter::ParticleEmitter *stock, Emitter::ParticleEmitter *explosion, int SIDES, int VSIDES)
+void sphericalFirework(glm::vec4 position, Emitter::ParticleEmitter *stock, Emitter::ParticleEmitter *explosion, int SIDES = 7, int VSIDES = 7)
 {
 #define PI 3.141592
 
@@ -1478,10 +1478,10 @@ void KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mod)
         fprintf(stdout, "Shaders recarregados!\n");
         fflush(stdout);
     } else if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
-    // Se o usuário pressionar a tecla ESC, fechamos a janela.
-    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+        // Se o usuário pressionar a tecla ESC, fechamos a janela.
+    } else if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
         glfwSetWindowShouldClose(window, GL_TRUE);
-    if (key == GLFW_KEY_R && action == GLFW_PRESS)
+    } else if (key == GLFW_KEY_R && action == GLFW_PRESS)
     {
         LoadShadersFromFiles();
         fprintf(stdout, "Shaders recarregados!\n");
@@ -1514,16 +1514,12 @@ void KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mod)
         //     previousTime = timeShow;
         //     float dt = timeShow - previousTime;
 
-        sphericalFirework(glm::vec4(0, 0, 0, 1), e2, e1, 7, 7);
-
         sphericalFirework(glm::vec4(4, 0, 0, 1), e2, e1, 14, 14);
-
-        sphericalFirework(glm::vec4(-2, 0, 0, 1), e2, e1, 10, 10);
-
+        sphericalFirework(glm::vec4(1.33333, 0, 0, 1), e2, e1, 7, 7);
+        sphericalFirework(glm::vec4(-1.33333, 0, 0, 1), e2, e1, 10, 10);
         sphericalFirework(glm::vec4(-4, 0, 0, 1), e2, e1, 8, 8);
 
         sphericalFirework(glm::vec4(5, 10, -20, 1), e2, e1, 50, 50);
-
         sphericalFirework(glm::vec4(-5, 10, -20, 1), e2, e1, 50, 50);
     }
 
@@ -1593,6 +1589,7 @@ void KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mod)
 
         for (float theta = 0; theta < 2*PI; theta += (PI/5)) {
             glm::vec4 p = center + r*glm::vec4(std::cos(theta), 0, std::sin(theta), 0);
+            p.y = -(4.0f * std::sin(theta));
             sphericalFirework(p, e1, e1);
         }
     }
