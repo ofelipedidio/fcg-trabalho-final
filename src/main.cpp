@@ -3,17 +3,9 @@
 //       Departamento de Informática Aplicada
 //
 //    INF01047 Fundamentos de Computação Gráfica
-//               Prof. Eduardo Gastal
+//               Rafael Lacerda e Felipe Didio
 //
-//                   LABORATÓRIO 5
-//
-
-// Arquivos "headers" padrões de C podem ser incluídos em um
-// programa C++, sendo necessário somente adicionar o caractere
-// "c" antes de seu nome, e remover o sufixo ".h". Exemplo:
-//    #include <stdio.h> // Em C
-//  vira
-//    #include <cstdio> // Em C++
+//                   Projeto Final
 //
 #include <cmath>
 #include <cstdio>
@@ -64,11 +56,9 @@ Emitter::ParticleEmitter *e1;
 Emitter::ParticleEmitter *e2;
 
 // added fireworks functions
-void sphericalFirework(glm::vec4 position, Emitter::ParticleEmitter *stock, Emitter::ParticleEmitter *explosion)
+void sphericalFirework(glm::vec4 position, Emitter::ParticleEmitter *stock, Emitter::ParticleEmitter *explosion, int SIDES, int VSIDES)
 {
 #define PI 3.141592
-#define SIDES 7
-#define VSIDES 7
 
     float height = 10.0f;
 
@@ -103,7 +93,7 @@ void sphericalFirework(glm::vec4 position, Emitter::ParticleEmitter *stock, Emit
 void onClickFloor(int button, int action, int mods, float x, float z)
 {
     glm::vec4 point = {x, 0.0f, z, 1.0f};
-    sphericalFirework(point, e2, e1);
+    sphericalFirework(point, e2, e1, 7, 7);
 }
 
 void showReticle(GLFWwindow *window);
@@ -225,12 +215,6 @@ struct SceneObject
     glm::vec3 bbox_max;
 };
 
-// Abaixo definimos variáveis globais utilizadas em várias funções do código.
-
-// A cena virtual é uma lista de objetos nomeados, guardados em um dicionário
-// (map).  Veja dentro da função BuildTrianglesAndAddToVirtualScene() como que são incluídos
-// objetos dentro da variável g_VirtualScene, e veja na função main() como
-// estes são acessados.
 std::map<std::string, SceneObject> g_VirtualScene;
 // added
 std::map<const char *, SceneObject> g_VirtualFireworks;
@@ -242,10 +226,6 @@ game::Camera cinema4;
 
 // Pilha que guardará as matrizes de modelagem.
 std::stack<glm::mat4> g_MatrixStack;
-
-// Razão de proporção da janela (largura/altura). Veja função FramebufferSizeCallback().
-// float g_ScreenRatio = 1.0f;
-
 // Ângulos de Euler que controlam a rotação de um dos cubos da cena virtual
 float g_AngleX = 0.0f;
 float g_AngleY = 0.0f;
@@ -256,19 +236,6 @@ float g_AngleZ = 0.0f;
 bool g_LeftMouseButtonPressed = false;
 bool g_RightMouseButtonPressed = false;  // Análogo para botão direito do mouse
 bool g_MiddleMouseButtonPressed = false; // Análogo para botão do meio do mouse
-
-// Variáveis que definem a câmera em coordenadas esféricas, controladas pelo
-// usuário através do mouse (veja função CursorPosCallback()). A posição
-// efetiva da câmera é calculada dentro da função main(), dentro do loop de
-// renderização.
-// float g_CameraTheta = 0.0f;    // Ângulo no plano ZX em relação ao eixo Z
-// float g_CameraPhi = 0.0f;      // Ângulo em relação ao eixo Y
-// float g_CameraDistance = 3.5f; // Distância da câmera para a origem
-
-// Variável que controla o tipo de projeção utilizada: perspectiva ou ortográfica.
-// bool g_UsePerspectiveProjection = true;
-
-// Variável que controla se o texto informativo será mostrado na tela.
 bool g_ShowInfoText = true;
 
 // Variáveis que definem um programa de GPU (shaders). Veja função LoadShadersFromFiles().
@@ -478,18 +445,13 @@ int main(int argc, char *argv[])
     printf("GPU: %s, %s, OpenGL %s, GLSL %s\n", vendor, renderer, glversion, glslversion);
 
     // Carregamos os shaders de vértices e de fragmentos que serão utilizados
-    // para renderização. Veja slides 180-200 do documento Aula_03_Rendering_Pipeline_Grafico.pdf.
-    //
     LoadShadersFromFiles();
 
-    // Carregamos duas imagens para serem utilizadas como textura
-    LoadTextureImage("../data/fern_02_diff_8k.jpg"); // TextureImage0
-
-    // tower textures
-    LoadTextureImage("../data/10744-v1.jpg");
+    // Carregamos as imagens para serem utilizadas como textura
+    LoadTextureImage("../data/fern_02_diff_8k.jpg");
+    LoadTextureImage("../data/disneyhdri.jpg");
     LoadTextureImage("../data/BrickGroutless0025_3_S.jpg");
     LoadTextureImage("../data/BuildingsDerelict0132_M.jpg");
-
     LoadTextureImage("../data/grass.jpg");
     LoadTextureImage("../data/RooftilesWood0047_1_M.jpg");
     LoadTextureImage("../data/Rose_Ornament_Art_Nouveau_Tidbits_Freebie-300x283.png");
@@ -528,9 +490,9 @@ int main(int argc, char *argv[])
     ComputeNormals(&ferrisbmodel);
     BuildTrianglesAndAddToVirtualScene(&ferrisbmodel);
 
-    // ObjModel acaciamodel("../data/acacia tree vol 15_OBJ.obj");
-    // ComputeNormals(&acaciamodel);
-    // BuildTrianglesAndAddToVirtualScene(&acaciamodel);
+    ObjModel acaciamodel("../data/acacia tree vol 15_OBJ.obj");
+    ComputeNormals(&acaciamodel);
+    BuildTrianglesAndAddToVirtualScene(&acaciamodel);
 
     if (argc > 1)
     {
@@ -607,40 +569,11 @@ int main(int argc, char *argv[])
         Renderer renderer(g_GpuProgramID);
 
         camera.onUpdate(dt);
-        /*cinema1.onUpdate(dt);
-        cinema2.onUpdate(dt);
-        cinema3.onUpdate(dt);
-        cinema4.onUpdate(dt);*/
-
-        // // Computamos a posição da câmera utilizando coordenadas esféricas.  As
-        // // variáveis g_CameraDistance, g_CameraPhi, e g_CameraTheta são
-        // // controladas pelo mouse do usuário. Veja as funções CursorPosCallback()
-        // // e ScrollCallback().
-        // float r = g_CameraDistance;
-        // float y = r * sin(g_CameraPhi);
-        // float z = r * cos(g_CameraPhi) * cos(g_CameraTheta);
-        // float x = r * cos(g_CameraPhi) * sin(g_CameraTheta);
-
-        // // Abaixo definimos as varáveis que efetivamente definem a câmera virtual.
-        // // Veja slides 195-227 e 229-234 do documento Aula_08_Sistemas_de_Coordenadas.pdf.
-        // glm::vec4 camera_position_c = glm::vec4(x, y, z, 1.0f);             // Ponto "c", centro da câmera
-        // glm::vec4 camera_lookat_l = glm::vec4(0.0f, 0.0f, 0.0f, 1.0f);      // Ponto "l", para onde a câmera (look-at) estará sempre olhando
-        // glm::vec4 camera_view_vector = camera_lookat_l - camera_position_c; // Vetor "view", sentido para onde a câmera está virada
-        // glm::vec4 camera_up_vector = glm::vec4(0.0f, 1.0f, 0.0f, 0.0f);     // Vetor "up" fixado para apontar para o "céu" (eito Y global)
-
-        // Computamos a matriz "View" utilizando os parâmetros da câmera para
-        // definir o sistema de coordenadas da câmera.  Veja slides 2-14, 184-190 e 236-242 do documento Aula_08_Sistemas_de_Coordenadas.pdf.
-        // glm::mat4 view = Matrix_Camera_View(camera_position_c, camera_view_vector, camera_up_vector);
-        // added
         glm::mat4 view;
 
         // Agora computamos a matriz de Projeção.
         glm::mat4 projection;
         camera.computeMatrices(view, projection);
-        /*cinema1.computeMatrices(view, projection);
-        cinema2.computeMatrices(view, projection);
-        cinema3.computeMatrices(view, projection);
-        cinema4.computeMatrices(view, projection);*/
         glUniformMatrix4fv(view_uniform, 1, GL_FALSE, glm::value_ptr(view));
         glUniformMatrix4fv(projection_uniform, 1, GL_FALSE, glm::value_ptr(projection));
 
@@ -649,32 +582,6 @@ int main(int argc, char *argv[])
 
         e1->onRender(renderer);
         e2->onRender(renderer);
-
-        // Note que, no sistema de coordenadas da câmera, os planos near e far
-        // estão no sentido negativo! Veja slides 176-204 do documento Aula_09_Projecoes.pdf.
-        // float nearplane = -0.1f;    // Posição do "near plane"
-        // float farplane = -10000.0f; // Posição do "far plane"
-
-        // if (g_UsePerspectiveProjection)
-        // {
-        //     // Projeção Perspectiva.
-        //     // Para definição do field of view (FOV), veja slides 205-215 do documento Aula_09_Projecoes.pdf.
-        //     float field_of_view = 3.141592 / 3.0f;
-        //     projection = Matrix_Perspective(field_of_view, g_ScreenRatio, nearplane, farplane);
-        // }
-        // else
-        // {
-        //     // Projeção Ortográfica.
-        //     // Para definição dos valores l, r, b, t ("left", "right", "bottom", "top"),
-        //     // PARA PROJEÇÃO ORTOGRÁFICA veja slides 219-224 do documento Aula_09_Projecoes.pdf.
-        //     // Para simular um "zoom" ortográfico, computamos o valor de "t"
-        //     // utilizando a variável g_CameraDistance.
-        //     float t = 1.5f * g_CameraDistance / 2.5f;
-        //     float b = -t;
-        //     float r = t * g_ScreenRatio;
-        //     float l = -r;
-        //     projection = Matrix_Orthographic(l, r, b, t, nearplane, farplane);
-        // }
 
         glm::mat4 model = Matrix_Identity(); // Transformação identidade de modelagem
 
@@ -696,9 +603,7 @@ int main(int argc, char *argv[])
         glDisable(GL_CULL_FACE);
 
         // Desenhamos o modelo da esfera
-        model = Matrix_Translate(-1.0f, 0.0f, 0.0f) * Matrix_Scale(500.0, 500.0, 500.0); // * Matrix_Rotate_Z(0.6f)
-                                                                                         //* Matrix_Rotate_X(0.2f)
-                                                                                         //* Matrix_Rotate_Y(g_AngleY + (float)glfwGetTime() * 0.1f)
+        model = Matrix_Translate(0.0f, 200.0f, 0.0f) * Matrix_Scale(500.0, 500.0, 500.0) * Matrix_Rotate_Y(-600.0f);
         glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model));
         glUniform1i(g_object_id_uniform, SPHERE);
         DrawVirtualObject("the_sphere");
@@ -712,7 +617,7 @@ int main(int argc, char *argv[])
         DrawVirtualObject("the_bunny");
 
         // Desenhamos o plano do chão
-        model = Matrix_Translate(0.0f, -1.0f, 0.0f) * Matrix_Scale(100.0f, 1.0f, 100.0f);
+        model = Matrix_Translate(0.0f, -1.0f, 0.0f) * Matrix_Scale(500.0f, 1.0f, 500.0f);
         glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model));
         glUniform1i(g_object_id_uniform, PLANE);
         DrawVirtualObject("the_plane");
@@ -781,7 +686,7 @@ int main(int argc, char *argv[])
         DrawVirtualObject("tower");
 
         // Desenhamos o modelo da ferris wheel
-        model = Matrix_Translate(10.0f, 2.5f, -10.0f) * Matrix_Scale(2.0f, 2.0f, 2.0f) * Matrix_Rotate_Y(-0.8f);
+        model = Matrix_Translate(15.0f, 13.0f, -12.0f) * Matrix_Scale(8.0f, 8.0f, 8.0f) * Matrix_Rotate_Y(-0.8f);
         glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model));
         glUniform1i(g_object_id_uniform, FERRIS);
         DrawVirtualObject("3");
@@ -832,13 +737,6 @@ int main(int argc, char *argv[])
         // Imprimimos na tela informação sobre o número de quadros renderizados
         // por segundo (frames per second).
         TextRendering_ShowFramesPerSecond(window);
-
-        // O framebuffer onde OpenGL executa as operações de renderização não
-        // é o mesmo que está sendo mostrado para o usuário, caso contrário
-        // seria possível ver artefatos conhecidos como "screen tearing". A
-        // chamada abaixo faz a troca dos buffers, mostrando para o usuário
-        // tudo que foi renderizado pelas funções acima.
-        // Veja o link: https://en.wikipedia.org/w/index.php?title=Multiple_buffering&oldid=793452829#Double_buffering_in_computer_graphics
         glfwSwapBuffers(window);
 
         // Verificamos com o sistema operacional se houve alguma interação do
@@ -1574,77 +1472,7 @@ RenderObject renderObjectOf(const char *object_id)
         g_VirtualFireworks[object_id].num_indices,
         g_VirtualFireworks[object_id].rendering_mode};
 }
-// Definição da função que será chamada sempre que o usuário pressionar alguma
-// tecla do teclado. Veja http://www.glfw.org/docs/latest/input_guide.html#input_key
-/*void KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mod)
-{
-    // ==================
-    // Não modifique este loop! Ele é utilizando para correção automatizada dos
-    // laboratórios. Deve ser sempre o primeiro comando desta função KeyCallback().
-    for (int i = 0; i < 10; ++i)
-        if (key == GLFW_KEY_0 + i && action == GLFW_PRESS && mod == GLFW_MOD_SHIFT)
-            std::exit(100 + i);
-    // ==================
 
-    // O código abaixo implementa a seguinte lógica:
-    //   Se apertar tecla X       então g_AngleX += delta;
-    //   Se apertar tecla shift+X então g_AngleX -= delta;
-    //   Se apertar tecla Y       então g_AngleY += delta;
-    //   Se apertar tecla shift+Y então g_AngleY -= delta;
-    //   Se apertar tecla Z       então g_AngleZ += delta;
-    //   Se apertar tecla shift+Z então g_AngleZ -= delta;
-
-    // Se o usuário apertar a tecla H, fazemos um "toggle" do texto informativo mostrado na tela.
-    if (key == GLFW_KEY_H && action == GLFW_PRESS)
-    {
-        g_ShowInfoText = !g_ShowInfoText;
-    }
-
-    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
-        glfwSetWindowShouldClose(window, GL_TRUE);
-    } else if (key == GLFW_KEY_P && action == GLFW_PRESS) {
-        camera.usePerspectiveProjection = true;
-    } else if (key == GLFW_KEY_O && action == GLFW_PRESS) {
-        camera.usePerspectiveProjection = false;
-    } else if (key == GLFW_KEY_H && action == GLFW_PRESS) {
-        g_ShowInfoText = !g_ShowInfoText;
-    } else if (key == GLFW_KEY_F && action == GLFW_PRESS) {
-        sphericalFirework(glm::vec4(0, 0, 0, 1), e2, e1);
-    } else if (key == GLFW_KEY_A && action == GLFW_PRESS) {
-        camera.movement.decX = true;
-    } else if (key == GLFW_KEY_A && action == GLFW_RELEASE) {
-        camera.movement.decX = false;
-    } else if (key == GLFW_KEY_D && action == GLFW_PRESS) {
-        camera.movement.incX = true;
-    } else if (key == GLFW_KEY_D && action == GLFW_RELEASE) {
-        camera.movement.incX = false;
-    } else if (key == GLFW_KEY_S && action == GLFW_PRESS) {
-        camera.movement.decY = true;
-    } else if (key == GLFW_KEY_S && action == GLFW_RELEASE) {
-        camera.movement.decY = false;
-    } else if (key == GLFW_KEY_W && action == GLFW_PRESS) {
-        camera.movement.incY = true;
-    } else if (key == GLFW_KEY_W && action == GLFW_RELEASE) {
-        camera.movement.incY = false;
-    } else if (key == GLFW_KEY_SPACE && action == GLFW_PRESS) {
-        camera.movement.incZ = true;
-    } else if (key == GLFW_KEY_SPACE && action == GLFW_RELEASE) {
-        camera.movement.incZ = false;
-    } else if (key == GLFW_KEY_LEFT_SHIFT && action == GLFW_PRESS) {
-        camera.movement.decZ = true;
-    } else if (key == GLFW_KEY_LEFT_SHIFT && action == GLFW_RELEASE) {
-        camera.movement.decZ = false;
-    } else if (key == GLFW_KEY_Q && action == GLFW_PRESS) {
-        camera.isLookAt ^= true;
-    } else if (key == GLFW_KEY_B && action == GLFW_PRESS) {
-        camera.bezierTime = 0.0f;
-        camera.bezierDuration = 4.0f;
-        camera.bezierCurve.p0 = glm::vec4(10.0f, 50.0f, 10.0f, 1.0f);
-        camera.bezierCurve.p1 = glm::vec4(0.0f, 0.0f, 20.0f, 1.0f);
-        camera.bezierCurve.p2 = glm::vec4(00.0f, -10.0f, -30.0f, 1.0f);
-        camera.bezierCurve.p3 = glm::vec4(-50.0f, 10.0f, -0.0f, 1.0f);
-    }
-}*/
 void KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mod)
 {
     for (int i = 0; i < 10; ++i)
@@ -1677,12 +1505,28 @@ void KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mod)
     }
     else if (key == GLFW_KEY_F && action == GLFW_PRESS)
     {
-        sphericalFirework(glm::vec4(0, 0, 0, 1), e2, e1);
-        sphericalFirework(glm::vec4(2, 0, 0, 1), e2, e1);
-        sphericalFirework(glm::vec4(4, 0, 0, 1), e2, e1);
-        sphericalFirework(glm::vec4(-2, 0, 0, 1), e2, e1);
-        sphericalFirework(glm::vec4(-4, 0, 0, 1), e2, e1);
+        bool finishShow = false;
+
+        // loop
+        // while (!finishShow)
+        // {
+        //     double timeShow = glfwGetTime();
+        //     previousTime = timeShow;
+        //     float dt = timeShow - previousTime;
+
+        sphericalFirework(glm::vec4(0, 0, 0, 1), e2, e1, 7, 7);
+
+        sphericalFirework(glm::vec4(4, 0, 0, 1), e2, e1, 14, 14);
+
+        sphericalFirework(glm::vec4(-2, 0, 0, 1), e2, e1, 10, 10);
+
+        sphericalFirework(glm::vec4(-4, 0, 0, 1), e2, e1, 8, 8);
+
+        sphericalFirework(glm::vec4(5, 10, -20, 1), e2, e1, 50, 50);
+
+        sphericalFirework(glm::vec4(-5, 10, -20, 1), e2, e1, 50, 50);
     }
+
     else if (key == GLFW_KEY_A && action == GLFW_PRESS)
     {
         camera.movement.decX = true;

@@ -115,7 +115,7 @@ void main()
         float phi = asin(py/sphere_radius);
         U = (theta + M_PI)/(2*M_PI);
         V = (phi + M_PI_2) / M_PI;
-        Kd = texture(TextureImage11, vec2(U,V)).rgb;
+        Kd = texture(TextureImage1, vec2(U,V)).rgb;
     }
     else if ( object_id == BUNNY )
     {
@@ -142,8 +142,8 @@ void main()
         // Coordenadas de textura do plano, obtidas do arquivo OBJ.
         U = texcoords.x;
         V = texcoords.y;
-        float repeatedU = mod(U * 40.0,1.0);
-        float repeatedV = mod(V * 40.0,1.0);
+        float repeatedU = mod(U * 100.0,1.0);
+        float repeatedV = mod(V * 100.0,1.0);
 
         vec3 Kd4 = texture(TextureImage4, vec2(repeatedU,repeatedV)).rgb;
        Kd = Kd4;
