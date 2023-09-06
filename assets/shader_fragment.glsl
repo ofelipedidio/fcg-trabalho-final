@@ -202,7 +202,8 @@ void main()
         float repeatedV = mod(V*0.5,1.0);
 
         vec3 Kd4 = texture(TextureImage4, vec2(repeatedU,repeatedV)).rgb;
-       Kd = Kd4;
+       Kd = 0.5*Kd4 + 0.5*vec3(0, 0.1, 0);
+
     }
     else if ( object_id == BUILD1 )
     {
@@ -246,6 +247,27 @@ void main()
         V = (phi + M_PI_2) / M_PI;
         Kd = texture(TextureImage13, vec2(U,V)).rgb;;
         // Kd = (0.9*Kd)+(0.1*vec3(1, 1, 1));
+    } else if (object_id == ACACIA) {
+        // Propriedades espectrais do fern
+        Ks = vec3(0.0, 0.0, 0.0);
+        Ka = vec3(0.0, 0.0, 0.0);
+        q = 15.0;
+
+        U = texcoords.x;
+        V = texcoords.y;
+        Kd = texture(TextureImage0, vec2(U,V)).rgb;;
+
+        Ks = vec3(0.0,0.0,0.0);
+        Ka = vec3(0.0, 0.0, 0.0);
+        q = 1.0;
+        // Coordenadas de textura do plano, obtidas do arquivo OBJ.
+        U = texcoords.x;
+        V = texcoords.y;
+        float repeatedU = mod(U*0.5,1.0);
+        float repeatedV = mod(V*0.5,1.0);
+
+        vec3 Kd4 = texture(TextureImage4, vec2(repeatedU,repeatedV)).rgb;
+       Kd = 0.5*Kd4 + 0.5*vec3(0, 0.1, 0);
     }
 
     float aaa = object_id;
