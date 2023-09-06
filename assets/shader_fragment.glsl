@@ -20,11 +20,14 @@ uniform mat4 projection;
 
 // Identificador que define qual objeto está sendo desenhado no momento
 #define SPHERE 0
-#define BUNNY  1
-#define PLANE  2
-#define ROCK   3
-#define FERN   4
+#define BUNNY 1
+#define PLANE 2
+#define ROCK 3
+#define FERN 4
 #define BUILD1 5
+#define FERRIS 6
+#define ACACIA 7
+#define FIREWORK 8
 uniform int object_id;
 
 // Parâmetros da axis-aligned bounding box (AABB) do modelo
@@ -44,6 +47,8 @@ uniform sampler2D TextureImage8;
 uniform sampler2D TextureImage9;
 uniform sampler2D TextureImage10;
 uniform sampler2D TextureImage11;
+uniform sampler2D TextureImage12;
+uniform sampler2D TextureImage13;
 
 // O valor de saída ("out") de um Fragment Shader é a cor final do fragmento.
 out vec4 color;
@@ -192,13 +197,51 @@ void main()
         Ks = vec3(0.0, 0.0, 0.0);
         Ka = vec3(0.0, 0.0, 0.0);
         q = 15.0;
-        vec3 Kd3 = texture(TextureImage3, vec2(U,V)).rgb;
+        vec3 Kd3 = texture(TextureImage3, vec2(U, V)).rgb;
         Kd = Kd3;
     }
+    else if ( object_id == FERRIS )
+    {
+        U = texcoords.x;
+        V = texcoords.y;
+        // Propriedades espectrais do fern
+        Ks = vec3(0.9, 0.9, 0.9);
+        Ka = vec3(0.1, 0.1, 0.1);
+        q = 30.0;
+
+        vec3 Kd3 = texture(TextureImage3, vec2(U,V)).rgb;
+        Kd = Kd3;
+        Kd = vec3(0.8, 0.8, 0.8);
+    } else if (object_id == FIREWORK) {
+        Ks = vec3(0.0,0.0,0.0);
+        Ka = vec3(0.0, 0.0, 0.0);
+        q = 1.0;
+
+        int sphere_radius = 5;
+        vec4 bbox_center = (bbox_min + bbox_max) / 2.0;
+        vec4 pl = bbox_center + sphere_radius*(normalize(position_model - bbox_center));
+        vec4 vector_p = pl - bbox_center;
+        float px = vector_p.x;
+        float py = vector_p.y;
+        float pz = vector_p.z;
+
+        float theta = atan(px,pz);
+        float phi = asin(py/sphere_radius);
+        U = (theta + M_PI)/(2*M_PI);
+        V = (phi + M_PI_2) / M_PI;
+        Kd = texture(TextureImage13, vec2(U,V)).rgb;;
+    }
+
+    float aaa = object_id;
+    // Kd = vec3(aaa / 10.0, 0, 0);
 
     vec3 ambient_term = Ka*Ia;
     vec3 phong_specular_term  = Ks*I*pow(max(0,dot(r,v)),q);
-    lambert_diffuse_term =Kd*I*max(0,dot(n,l));
+    if ( object_id == SPHERE ) {
+        lambert_diffuse_term =Kd*I;
+    } else {
+        lambert_diffuse_term =Kd*I*max(0, dot(n, l));
+    }
     color.rgb = lambert_diffuse_term + ambient_term + phong_specular_term;
 
     color.a = 1;

@@ -461,6 +461,8 @@ int main(int argc, char *argv[])
     LoadTextureImage("../data/WoodPlanksBeamed0042_4_L.jpg");
     LoadTextureImage("../data/WoodPlanksDirty0008_L.jpg");
     LoadTextureImage("../data/sky.png");
+    LoadTextureImage("../data/firework1.png");
+    LoadTextureImage("../data/firework2.png");
 
     // Construímos a representação de objetos geométricos através de malhas de triângulos
     ObjModel spheremodel("../data/sphere.obj");
@@ -602,6 +604,8 @@ int main(int argc, char *argv[])
         e1->onUpdate(dt);
         e2->onUpdate(dt);
 
+#define FIREWORK 8
+        glUniform1i(g_object_id_uniform, FIREWORK);
         e1->onRender(renderer);
         e2->onRender(renderer);
 
@@ -951,6 +955,8 @@ void LoadShadersFromFiles()
     glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage9"), 9);
     glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage10"), 10);
     glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage11"), 11);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage12"), 12);
+    glUniform1i(glGetUniformLocation(g_GpuProgramID, "TextureImage13"), 13);
     glUseProgram(0);
 }
 
@@ -1412,18 +1418,12 @@ void CursorPosCallback(GLFWwindow *window, double xpos, double ypos)
 // Função callback chamada sempre que o usuário movimenta a "rodinha" do mouse.
 void ScrollCallback(GLFWwindow *window, double xoffset, double yoffset)
 {
-    // Atualizamos a distância da câmera para a origem utilizando a
-    // movimentação da "rodinha", simulando um ZOOM.
-    g_CameraDistance -= 0.1f * yoffset;
-
-    // Uma câmera look-at nunca pode estar exatamente "em cima" do ponto para
-    // onde ela está olhando, pois isto gera problemas de divisão por zero na
-    // definição do sistema de coordenadas da câmera. Isto é, a variável abaixo
-    // nunca pode ser zero. Versões anteriores deste código possuíam este bug,
-    // o qual foi detectado pelo aluno Vinicius Fraga (2017/2).
-    const float verysmallnumber = std::numeric_limits<float>::epsilon();
-    if (g_CameraDistance < verysmallnumber)
-        g_CameraDistance = verysmallnumber;
+    camera.distance -= 1.0f * yoffset;
+    const float verySmallNumber = std::numeric_limits<float>::epsilon();
+    if (camera.distance < verySmallNumber)
+    {
+        camera.distance = verySmallNumber;
+    }
 }
 
 // Definição da função que será chamada sempre que o usuário pressionar alguma
@@ -1436,23 +1436,12 @@ void KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mod)
     for (int i = 0; i < 10; ++i)
         if (key == GLFW_KEY_0 + i && action == GLFW_PRESS && mod == GLFW_MOD_SHIFT)
             std::exit(100 + i);
-    // ==================
 
-    // O código abaixo implementa a seguinte lógica:
-    //   Se apertar tecla X       então g_AngleX += delta;
-    //   Se apertar tecla shift+X então g_AngleX -= delta;
-    //   Se apertar tecla Y       então g_AngleY += delta;
-    //   Se apertar tecla shift+Y então g_AngleY -= delta;
-    //   Se apertar tecla Z       então g_AngleZ += delta;
-    //   Se apertar tecla shift+Z então g_AngleZ -= delta;
-
-    // Se o usuário apertar a tecla H, fazemos um "toggle" do texto informativo mostrado na tela.
-    if (key == GLFW_KEY_H && action == GLFW_PRESS)
-    {
-        g_ShowInfoText = !g_ShowInfoText;
-    }
-
-    if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
+    if (key == GLFW_KEY_R && action == GLFW_PRESS) {
+        LoadShadersFromFiles();
+        fprintf(stdout, "Shaders recarregados!\n");
+        fflush(stdout);
+    } else if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
         glfwSetWindowShouldClose(window, GL_TRUE);
     } else if (key == GLFW_KEY_P && action == GLFW_PRESS) {
         camera.usePerspectiveProjection = true;
@@ -1460,6 +1449,8 @@ void KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mod)
         camera.usePerspectiveProjection = false;
     } else if (key == GLFW_KEY_H && action == GLFW_PRESS) {
         g_ShowInfoText = !g_ShowInfoText;
+    } else if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
+        glfwSetWindowShouldClose(window, GL_TRUE);
     } else if (key == GLFW_KEY_F && action == GLFW_PRESS) {
         sphericalFirework(glm::vec4(0, 0, 0, 1), e2, e1);
     } else if (key == GLFW_KEY_A && action == GLFW_PRESS) {
