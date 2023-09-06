@@ -1,6 +1,7 @@
 # Fogos de Artifício
 
-
+![Imagem 1](https://github.com/ofelipedidio/fcg-trabalho-final/blob/ambient-master-merge/image1.png?raw=true)
+![Imagem 2](https://github.com/ofelipedidio/fcg-trabalho-final/blob/ambient-master-merge/image2.png?raw=true)
 
 
 ## Membros da dupla
