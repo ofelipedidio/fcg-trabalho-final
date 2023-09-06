@@ -153,6 +153,10 @@ namespace Emitter
 
       // Send transformation matrix to the GPU
       glUniformMatrix4fv(renderer.model, 1, GL_FALSE, glm::value_ptr(model));
+      glm::vec3 bbox_min = glm::vec3(x-2.0f, y-2.0f, z-2.0f);
+      glm::vec3 bbox_max = glm::vec3(x+2.0f, y+2.0f, z+2.0f);
+      glUniform4f(renderer.g_bbox_min_uniform, bbox_min.x, bbox_min.y, bbox_min.z, 1.0f);
+      glUniform4f(renderer.g_bbox_max_uniform, bbox_max.x, bbox_max.y, bbox_max.z, 1.0f);
 
       // Draw object
       this->proprieties.object.draw();

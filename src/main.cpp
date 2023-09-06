@@ -93,7 +93,7 @@ void sphericalFirework(glm::vec4 position, Emitter::ParticleEmitter *stock, Emit
 void onClickFloor(int button, int action, int mods, float x, float z)
 {
     glm::vec4 point = {x, 0.0f, z, 1.0f};
-    sphericalFirework(point, e2, e1, 7, 7);
+    sphericalFirework(point, e2, e2, 7, 7);
 }
 
 void showReticle(GLFWwindow *window);
@@ -541,7 +541,7 @@ int main(int argc, char *argv[])
 
     e1 = new Emitter::ParticleEmitter(100000, emitterProprieties);
 
-    emitterProprieties.finalSize = 0.5f;
+    emitterProprieties.finalSize = 0.0f;
     e2 = new Emitter::ParticleEmitter(10000, emitterProprieties);
 
     // Ficamos em um loop infinito, renderizando, até que o usuário feche a janela
@@ -1581,8 +1581,8 @@ void KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mod)
         camera.bezierDuration = 4.0f;
         camera.bezierCurve.p0 = glm::vec4(10.0f, 50.0f, 10.0f, 1.0f);
         camera.bezierCurve.p1 = glm::vec4(0.0f, 0.0f, 20.0f, 1.0f);
-        camera.bezierCurve.p2 = glm::vec4(00.0f, -20.0f, -30.0f, 1.0f);
-        camera.bezierCurve.p3 = glm::vec4(-50.0f, 10.0f, -0.0f, 1.0f);
+        camera.bezierCurve.p2 = glm::vec4(00.0f, -10.0f, -30.0f, 1.0f);
+        camera.bezierCurve.p3 = glm::vec4(-50.0f, 10.0f, 30.0f, 1.0f);
     } else if (key == GLFW_KEY_E) {
         glm::vec4 center = glm::vec4(0, 0, -15, 1);
         float r = 15;
