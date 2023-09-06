@@ -696,22 +696,52 @@ int main(int argc, char *argv[])
         DrawVirtualObject("3");
 
         // Desenhamos o modelo da árvore
-        model = Matrix_Translate(15.0f, -1.2f, -6.0f) * Matrix_Scale(0.5f, 0.5f, 0.5f);
+        // model = Matrix_Translate(15.0f, -1.2f, -6.0f) * Matrix_Scale(0.5f, 0.5f, 0.5f);
+        // glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model));
+        // glUniform1i(g_object_id_uniform, ACACIA);
+        // DrawVirtualObject("acacia_tree_vol_15-00");
+
+        // model = Matrix_Translate(25.0f, -1.2f, 0.0f) * Matrix_Scale(0.5f, 0.5f, 0.5f);
+        // glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model));
+        // glUniform1i(g_object_id_uniform, ACACIA);
+        // DrawVirtualObject("acacia_tree_vol_15-00");
+
+        // model = Matrix_Translate(12.0f, -1.2f, 6.0f) * Matrix_Scale(0.5f, 0.5f, 0.5f);
+        // glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model));
+        // glUniform1i(g_object_id_uniform, ACACIA);
+        // DrawVirtualObject("acacia_tree_vol_15-00");
+
+        // model = Matrix_Translate(-10.0f, -1.2f, -6.0f) * Matrix_Scale(0.5f, 0.5f, 0.5f);
+        // glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model));
+        // glUniform1i(g_object_id_uniform, ACACIA);
+        // DrawVirtualObject("acacia_tree_vol_15-00");
+
+        // model = Matrix_Translate(-30.0f, -1.2f, -6.0f) * Matrix_Scale(0.5f, 0.5f, 0.5f);
+        // glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model));
+        // glUniform1i(g_object_id_uniform, ACACIA);
+        // DrawVirtualObject("acacia_tree_vol_15-00");
+
+        // model = Matrix_Translate(-20.0f, -1.2f, -16.0f) * Matrix_Scale(0.5f, 0.5f, 0.5f);
+        // glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model));
+        // glUniform1i(g_object_id_uniform, ACACIA);
+        // DrawVirtualObject("acacia_tree_vol_15-00");
+
+        model = Matrix_Translate(20.0f, -1.2f, 8.0f) * Matrix_Scale(0.5f, 0.5f, 0.5f);
         glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model));
         glUniform1i(g_object_id_uniform, ACACIA);
         DrawVirtualObject("acacia_tree_vol_15-00");
 
-        model = Matrix_Translate(25.0f, -1.2f, 0.0f) * Matrix_Scale(0.5f, 0.5f, 0.5f);
+        model = Matrix_Translate(15.0f, -1.2f, 30.0f) * Matrix_Scale(0.5f, 0.5f, 0.5f);
         glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model));
         glUniform1i(g_object_id_uniform, ACACIA);
         DrawVirtualObject("acacia_tree_vol_15-00");
 
-        model = Matrix_Translate(12.0f, -1.2f, 6.0f) * Matrix_Scale(0.5f, 0.5f, 0.5f);
+        model = Matrix_Translate(-30.0f, -1.2f, -50.0f) * Matrix_Scale(0.5f, 0.5f, 0.5f);
         glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model));
         glUniform1i(g_object_id_uniform, ACACIA);
         DrawVirtualObject("acacia_tree_vol_15-00");
 
-        model = Matrix_Translate(-10.0f, -1.2f, -6.0f) * Matrix_Scale(0.5f, 0.5f, 0.5f);
+        model = Matrix_Translate(30.0f, -1.2f, 40.0f) * Matrix_Scale(0.5f, 0.5f, 0.5f);
         glUniformMatrix4fv(g_model_uniform, 1, GL_FALSE, glm::value_ptr(model));
         glUniform1i(g_object_id_uniform, ACACIA);
         DrawVirtualObject("acacia_tree_vol_15-00");
@@ -1472,16 +1502,21 @@ void KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mod)
         if (key == GLFW_KEY_0 + i && action == GLFW_PRESS && mod == GLFW_MOD_SHIFT)
             std::exit(100 + i);
 
-
-    if (key == GLFW_KEY_R && action == GLFW_PRESS) {
+    if (key == GLFW_KEY_R && action == GLFW_PRESS)
+    {
         LoadShadersFromFiles();
         fprintf(stdout, "Shaders recarregados!\n");
         fflush(stdout);
-    } else if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
+    }
+    else if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+    {
         // Se o usuário pressionar a tecla ESC, fechamos a janela.
-    } else if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS) {
+    }
+    else if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+    {
         glfwSetWindowShouldClose(window, GL_TRUE);
-    } else if (key == GLFW_KEY_R && action == GLFW_PRESS)
+    }
+    else if (key == GLFW_KEY_R && action == GLFW_PRESS)
     {
         LoadShadersFromFiles();
         fprintf(stdout, "Shaders recarregados!\n");
@@ -1516,11 +1551,12 @@ void KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mod)
 
         sphericalFirework(glm::vec4(4, 0, 0, 1), e2, e1, 14, 14);
         sphericalFirework(glm::vec4(1.33333, 0, 0, 1), e2, e1, 7, 7);
-        sphericalFirework(glm::vec4(-1.33333, 0, 0, 1), e2, e1, 10, 10);
+        sphericalFirework(glm::vec4(-1.33333, 0, 0, 1), e2, e1, 7, 7);
         sphericalFirework(glm::vec4(-4, 0, 0, 1), e2, e1, 8, 8);
 
-        sphericalFirework(glm::vec4(5, 10, -20, 1), e2, e1, 50, 50);
-        sphericalFirework(glm::vec4(-5, 10, -20, 1), e2, e1, 50, 50);
+        sphericalFirework(glm::vec4(5, 15, -20, 1), e2, e1, 10, 10);
+        sphericalFirework(glm::vec4(5, -15, -20, 1), e2, e1, 10, 10);
+        sphericalFirework(glm::vec4(-5, 10, -20, 1), e2, e1, 10, 10);
     }
 
     else if (key == GLFW_KEY_A && action == GLFW_PRESS)
@@ -1583,12 +1619,15 @@ void KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mod)
         camera.bezierCurve.p1 = glm::vec4(0.0f, 0.0f, 20.0f, 1.0f);
         camera.bezierCurve.p2 = glm::vec4(00.0f, -10.0f, -30.0f, 1.0f);
         camera.bezierCurve.p3 = glm::vec4(-50.0f, 10.0f, 30.0f, 1.0f);
-    } else if (key == GLFW_KEY_E) {
+    }
+    else if (key == GLFW_KEY_E)
+    {
         glm::vec4 center = glm::vec4(0, 0, -15, 1);
         float r = 15;
 
-        for (float theta = 0; theta < 2*PI; theta += (PI/5)) {
-            glm::vec4 p = center + r*glm::vec4(std::cos(theta), 0, std::sin(theta), 0);
+        for (float theta = 0; theta < 2 * PI; theta += (PI / 5))
+        {
+            glm::vec4 p = center + r * glm::vec4(std::cos(theta), 0, std::sin(theta), 0);
             p.y = -(4.0f * std::sin(theta));
             sphericalFirework(p, e1, e1);
         }
