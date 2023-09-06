@@ -235,6 +235,10 @@ std::map<std::string, SceneObject> g_VirtualScene;
 // added
 std::map<const char *, SceneObject> g_VirtualFireworks;
 game::Camera camera;
+game::Camera cinema1;
+game::Camera cinema2;
+game::Camera cinema3;
+game::Camera cinema4;
 
 // Pilha que guardará as matrizes de modelagem.
 std::stack<glm::mat4> g_MatrixStack;
@@ -370,6 +374,43 @@ int main(int argc, char *argv[])
     camera.field_of_view = 3.141592f / 3.0f;
     camera.nearPlane = -0.1f;
     camera.farPlane = -100000.0f;
+
+    cinema1.usePerspectiveProjection = true;
+    cinema1.phi = -0.407999f;
+    cinema1.theta = -0.002f;
+    cinema1.distance = 45.0f;
+    cinema1.field_of_view = 3.141592f / 3.0f;
+    cinema1.nearPlane = -0.1f;
+    cinema1.farPlane = -100000.0f;
+    cinema1.position = glm::vec4(0.846790f, 3.836278f, 59.348335f, 1.0f);
+
+    cinema2.usePerspectiveProjection = true;
+    cinema2.phi = -0.408000f;
+    cinema2.theta = 1.148000f;
+    cinema2.distance = 43.0f;
+    cinema2.field_of_view = 3.141592f / 3.0f;
+    cinema2.nearPlane = -0.1f;
+    cinema2.farPlane = -100000.0f;
+    cinema2.position = glm::vec4(38.982445f, 3.836278f, 13.779153f, 1.0f);
+
+    cinema3.usePerspectiveProjection = true;
+    cinema3.phi = -0.295999f;
+    cinema3.theta = -2.772001f;
+    cinema3.distance = 43.0f;
+    cinema3.field_of_view = 3.141592f / 3.0f;
+    cinema3.nearPlane = -0.1f;
+    cinema3.farPlane = -100000.0f;
+    cinema3.position = glm::vec4(-19.066080f, 3.836278f, -53.253834f, 1.0f);
+
+    cinema4.usePerspectiveProjection = true;
+    cinema4.phi = -0.522000f;
+    cinema4.theta = -1.020003f;
+    cinema4.distance = 43.0f;
+    cinema4.field_of_view = 3.141592f / 3.0f;
+    cinema4.nearPlane = -0.1f;
+    cinema4.farPlane = -100000.0f;
+    cinema4.position = glm::vec4(-36.532978f, -0.820273f, 9.202836f, 1.0f);
+
     // Inicializamos a biblioteca GLFW, utilizada para criar uma janela do
     // sistema operacional, onde poderemos renderizar com OpenGL.
     int success = glfwInit();
@@ -566,6 +607,10 @@ int main(int argc, char *argv[])
         Renderer renderer(g_GpuProgramID);
 
         camera.onUpdate(dt);
+        /*cinema1.onUpdate(dt);
+        cinema2.onUpdate(dt);
+        cinema3.onUpdate(dt);
+        cinema4.onUpdate(dt);*/
 
         // // Computamos a posição da câmera utilizando coordenadas esféricas.  As
         // // variáveis g_CameraDistance, g_CameraPhi, e g_CameraTheta são
@@ -592,6 +637,10 @@ int main(int argc, char *argv[])
         // Agora computamos a matriz de Projeção.
         glm::mat4 projection;
         camera.computeMatrices(view, projection);
+        /*cinema1.computeMatrices(view, projection);
+        cinema2.computeMatrices(view, projection);
+        cinema3.computeMatrices(view, projection);
+        cinema4.computeMatrices(view, projection);*/
         glUniformMatrix4fv(view_uniform, 1, GL_FALSE, glm::value_ptr(view));
         glUniformMatrix4fv(projection_uniform, 1, GL_FALSE, glm::value_ptr(projection));
 
@@ -1332,6 +1381,22 @@ void FramebufferSizeCallback(GLFWwindow *window, int width, int height)
     camera.screenRatio = ((float)width) / ((float)height);
     camera.width = (float)width;
     camera.height = (float)height;
+
+    cinema1.screenRatio = ((float)width) / ((float)height);
+    cinema1.width = (float)width;
+    cinema1.height = (float)height;
+
+    cinema2.screenRatio = ((float)width) / ((float)height);
+    cinema2.width = (float)width;
+    cinema2.height = (float)height;
+
+    cinema3.screenRatio = ((float)width) / ((float)height);
+    cinema3.width = (float)width;
+    cinema3.height = (float)height;
+
+    cinema4.screenRatio = ((float)width) / ((float)height);
+    cinema4.width = (float)width;
+    cinema4.height = (float)height;
 }
 
 // Variáveis globais que armazenam a última posição do cursor do mouse, para
@@ -1613,6 +1678,10 @@ void KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mod)
     else if (key == GLFW_KEY_F && action == GLFW_PRESS)
     {
         sphericalFirework(glm::vec4(0, 0, 0, 1), e2, e1);
+        sphericalFirework(glm::vec4(2, 0, 0, 1), e2, e1);
+        sphericalFirework(glm::vec4(4, 0, 0, 1), e2, e1);
+        sphericalFirework(glm::vec4(-2, 0, 0, 1), e2, e1);
+        sphericalFirework(glm::vec4(-4, 0, 0, 1), e2, e1);
     }
     else if (key == GLFW_KEY_A && action == GLFW_PRESS)
     {
@@ -1674,6 +1743,42 @@ void KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mod)
         camera.bezierCurve.p1 = glm::vec4(0.0f, 0.0f, 20.0f, 1.0f);
         camera.bezierCurve.p2 = glm::vec4(00.0f, -20.0f, -30.0f, 1.0f);
         camera.bezierCurve.p3 = glm::vec4(-50.0f, 10.0f, -0.0f, 1.0f);
+    }
+    // acess cinema1 camera with 1
+    else if (key == GLFW_KEY_1 && action == GLFW_PRESS)
+    {
+        camera.distance = cinema1.distance;
+        camera.theta = cinema1.theta;
+        camera.phi = cinema1.phi;
+        camera.position = cinema1.position;
+        camera.isLookAt = false;
+    }
+    // acess cinema2 camera with 2
+    else if (key == GLFW_KEY_2 && action == GLFW_PRESS)
+    {
+        camera.distance = cinema2.distance;
+        camera.theta = cinema2.theta;
+        camera.phi = cinema2.phi;
+        camera.position = cinema2.position;
+        camera.isLookAt = false;
+    }
+    // acess cinema3 camera with 3
+    else if (key == GLFW_KEY_3 && action == GLFW_PRESS)
+    {
+        camera.distance = cinema3.distance;
+        camera.theta = cinema3.theta;
+        camera.phi = cinema3.phi;
+        camera.position = cinema3.position;
+        camera.isLookAt = false;
+    }
+    // acess cinema4 camera with 4
+    else if (key == GLFW_KEY_4 && action == GLFW_PRESS)
+    {
+        camera.distance = cinema4.distance;
+        camera.theta = cinema4.theta;
+        camera.phi = cinema4.phi;
+        camera.position = cinema4.position;
+        camera.isLookAt = false;
     }
 }
 
