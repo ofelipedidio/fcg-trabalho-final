@@ -105,7 +105,7 @@ void spawnParticleAt(glm::vec4 position);
 void onClickFloor(int button, int action, int mods, float x, float z)
 {
     glm::vec4 point = {x, 0.0f, z, 1.0f};
-    sphericalFirework(point, e2, e1);
+    sphericalFirework(point, e2, e2);
 }
 
 void showReticle(GLFWwindow *window);
@@ -540,7 +540,7 @@ int main(int argc, char *argv[])
     RenderObject ro((void *)g_VirtualFireworks["cube_faces"].first_index, g_VirtualFireworks["cube_faces"].num_indices, g_VirtualFireworks["cube_faces"].rendering_mode);
     emitterProprieties.object = ro;
 
-    e1 = new Emitter::ParticleEmitter(10000, emitterProprieties);
+    e1 = new Emitter::ParticleEmitter(100000, emitterProprieties);
 
     emitterProprieties.finalSize = 0.5f;
     e2 = new Emitter::ParticleEmitter(10000, emitterProprieties);
@@ -1369,6 +1369,8 @@ void MouseButtonCallback(GLFWwindow *window, int button, int action, int mods)
         float time = collision::collide(floor, ray);
         collision::Point p = ray.at(time);
         onClickFloor(button, action, mods, p.x, p.z);
+
+        std::cout << "Clicked at (" << p.x << ", " << p.z << ")" << std::endl;
     } else if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_RELEASE) {
         g_RightMouseButtonPressed = false;
     }
@@ -1418,6 +1420,7 @@ void CursorPosCallback(GLFWwindow *window, double xpos, double ypos)
 // Função callback chamada sempre que o usuário movimenta a "rodinha" do mouse.
 void ScrollCallback(GLFWwindow *window, double xoffset, double yoffset)
 {
+    //camera.position += 1.0f * yoffset;
     camera.distance -= 1.0f * yoffset;
     const float verySmallNumber = std::numeric_limits<float>::epsilon();
     if (camera.distance < verySmallNumber)
@@ -1486,6 +1489,14 @@ void KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mod)
         camera.bezierCurve.p1 = glm::vec4(0.0f, 0.0f, 20.0f, 1.0f);
         camera.bezierCurve.p2 = glm::vec4(00.0f, -10.0f, -30.0f, 1.0f);
         camera.bezierCurve.p3 = glm::vec4(-50.0f, 10.0f, -0.0f, 1.0f);
+    } else if (key == GLFW_KEY_E) {
+        glm::vec4 center = glm::vec4(0, 0, -15, 1);
+        float r = 15;
+
+        for (float theta = 0; theta < 2*PI; theta += (PI/5)) {
+            glm::vec4 p = center + r*glm::vec4(std::cos(theta), 0, std::sin(theta), 0);
+            sphericalFirework(p, e1, e1);
+        }
     }
 }
 

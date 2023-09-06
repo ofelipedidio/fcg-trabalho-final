@@ -16,12 +16,19 @@ namespace game
         float r = distance;
         if (!(0.0f <= bezierTime && bezierTime <= 1.0f))
         {
-          float y = r * std::sin(phi);
-          float z = r * std::cos(phi) * std::cos(theta);
-          float x = r * std::cos(phi) * std::sin(theta);
-          position = glm::vec4(x, y, z, 1.0f);
+            float y = (r * std::sin(phi));
+            float z = (r * std::cos(phi) * std::cos(theta));
+            float x = (r * std::cos(phi) * std::sin(theta));
+            position = glm::vec4(x, y, z, 1.0f);
+            viewVector = -position;
+            viewVector.w = 0.0f;
+            position.x += lookAtPoint.x;
+            position.y += lookAtPoint.y;
+            position.z += lookAtPoint.z;
+        } else {
+            viewVector = lookAtPoint - position;
         }
-        viewVector = lookAtPoint - position;
+        //viewVector /= norm(viewVector);
       }
       else
       {
@@ -30,7 +37,6 @@ namespace game
         float x = std::cos(phi) * std::sin(theta);
         viewVector = -glm::vec4(x, y, z, 0.0f);
       }
-
       view = Matrix_Camera_View(position, viewVector, upVector);
     }
 
